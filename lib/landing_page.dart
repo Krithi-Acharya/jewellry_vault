@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class JewelVaultColors {
+class JewellryVaultColors {
   static const Color background = Color(0xFFFCF9F4);
   static const Color primaryEmerald = Color(0xFF1B4332);
   static const Color darkEmerald = Color(0xFF012D1D);
@@ -12,11 +12,11 @@ class JewelVaultColors {
   static const Color secondaryText = Color(0xFF6B6258);
 }
 
-class JewelVaultTypography {
+class JewellryVaultTypography {
   static TextStyle displayMassive = GoogleFonts.fraunces(
     fontSize: 84,
     fontWeight: FontWeight.w400,
-    color: JewelVaultColors.primaryText,
+    color: JewellryVaultColors.primaryText,
     height: 1.1,
     letterSpacing: -0.03,
   );
@@ -24,7 +24,7 @@ class JewelVaultTypography {
   static TextStyle displayLarge = GoogleFonts.fraunces(
     fontSize: 56,
     fontWeight: FontWeight.w400,
-    color: JewelVaultColors.primaryText,
+    color: JewellryVaultColors.primaryText,
     height: 1.15,
     letterSpacing: -0.02,
   );
@@ -32,7 +32,7 @@ class JewelVaultTypography {
   static TextStyle displayMedium = GoogleFonts.fraunces(
     fontSize: 40,
     fontWeight: FontWeight.w400,
-    color: JewelVaultColors.primaryText,
+    color: JewellryVaultColors.primaryText,
     height: 1.2,
     letterSpacing: -0.01,
   );
@@ -40,27 +40,27 @@ class JewelVaultTypography {
   static TextStyle headingLarge = GoogleFonts.fraunces(
     fontSize: 28,
     fontWeight: FontWeight.w500,
-    color: JewelVaultColors.primaryText,
+    color: JewellryVaultColors.primaryText,
     height: 1.4,
   );
 
   static TextStyle headingMedium = GoogleFonts.fraunces(
     fontSize: 22,
     fontWeight: FontWeight.w500,
-    color: JewelVaultColors.primaryText,
+    color: JewellryVaultColors.primaryText,
   );
 
   static TextStyle bodyLarge = GoogleFonts.inter(
     fontSize: 20,
     fontWeight: FontWeight.w300,
-    color: JewelVaultColors.secondaryText,
+    color: JewellryVaultColors.secondaryText,
     height: 1.6,
   );
 
   static TextStyle bodyMedium = GoogleFonts.inter(
     fontSize: 16,
     fontWeight: FontWeight.w400,
-    color: JewelVaultColors.secondaryText,
+    color: JewellryVaultColors.secondaryText,
     height: 1.6,
   );
   
@@ -77,7 +77,7 @@ class LandingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: JewelVaultColors.background,
+      backgroundColor: JewellryVaultColors.background,
       body: Stack(
         children: [
           // Background ambient blurs
@@ -89,7 +89,7 @@ class LandingPage extends StatelessWidget {
               height: 800,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: JewelVaultColors.primaryEmerald.withOpacity(0.04),
+                color: JewellryVaultColors.primaryEmerald.withOpacity(0.04),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
@@ -105,7 +105,7 @@ class LandingPage extends StatelessWidget {
               height: 600,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: JewelVaultColors.primaryEmerald.withOpacity(0.03),
+                color: JewellryVaultColors.primaryEmerald.withOpacity(0.03),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
@@ -154,15 +154,15 @@ class _NavBar extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: JewelVaultColors.primaryEmerald,
+                  color: JewellryVaultColors.primaryEmerald,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(Icons.diamond_outlined, color: Colors.white, size: 24),
               ),
               const SizedBox(width: 16),
               Text(
-                'JewelVault',
-                style: JewelVaultTypography.headingLarge.copyWith(fontSize: 24, letterSpacing: -0.5),
+                'JewellryVault',
+                style: JewellryVaultTypography.headingLarge.copyWith(fontSize: 24, letterSpacing: -0.5),
               ),
             ],
           ),
@@ -186,7 +186,7 @@ class _NavBar extends StatelessWidget {
             )
           else
             IconButton(
-              icon: const Icon(Icons.menu, color: JewelVaultColors.primaryText),
+              icon: const Icon(Icons.menu, color: JewellryVaultColors.primaryText),
               onPressed: () {},
             ),
           if (isDesktop)
@@ -207,8 +207,8 @@ class _NavTextButton extends StatelessWidget {
     return TextButton(
       onPressed: () {},
       style: TextButton.styleFrom(
-        foregroundColor: JewelVaultColors.primaryText,
-        textStyle: JewelVaultTypography.labelLarge,
+        foregroundColor: JewellryVaultColors.primaryText,
+        textStyle: JewellryVaultTypography.labelLarge,
       ),
       child: Text(text),
     );
@@ -229,7 +229,7 @@ class _PrimaryButton extends StatelessWidget {
         boxShadow: [
           if (isDark)
             BoxShadow(
-              color: JewelVaultColors.primaryEmerald.withOpacity(0.3),
+              color: JewellryVaultColors.primaryEmerald.withOpacity(0.3),
               blurRadius: 20,
               offset: const Offset(0, 8),
             )
@@ -238,14 +238,14 @@ class _PrimaryButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: onPressed ?? () {},
         style: ElevatedButton.styleFrom(
-          backgroundColor: isDark ? JewelVaultColors.primaryEmerald : Colors.white,
-          foregroundColor: isDark ? Colors.white : JewelVaultColors.primaryEmerald,
+          backgroundColor: isDark ? JewellryVaultColors.primaryEmerald : Colors.white,
+          foregroundColor: isDark ? Colors.white : JewellryVaultColors.primaryEmerald,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          textStyle: JewelVaultTypography.labelLarge,
+          textStyle: JewellryVaultTypography.labelLarge,
         ),
         child: Text(text),
       ),
@@ -271,24 +271,24 @@ class _HeroSection extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              border: Border.all(color: JewelVaultColors.primaryEmerald.withOpacity(0.2)),
+              border: Border.all(color: JewellryVaultColors.primaryEmerald.withOpacity(0.2)),
               borderRadius: BorderRadius.circular(32),
               color: Colors.white.withOpacity(0.5),
             ),
             child: Text(
               'Introducing AI Styling',
-              style: JewelVaultTypography.labelLarge.copyWith(color: JewelVaultColors.primaryEmerald),
+              style: JewellryVaultTypography.labelLarge.copyWith(color: JewellryVaultColors.primaryEmerald),
             ),
           ),
           const SizedBox(height: 32),
           Text(
             'Your Curated Collection,\nPerfectly Matched.',
-            style: isDesktop ? JewelVaultTypography.displayMassive : JewelVaultTypography.displayMedium,
+            style: isDesktop ? JewellryVaultTypography.displayMassive : JewellryVaultTypography.displayMedium,
           ),
           const SizedBox(height: 32),
           Text(
-            'The ultimate digital vault for your wardrobe and jewelry. AI-powered styling that understands your unique aesthetic and unlocks endless combinations.',
-            style: JewelVaultTypography.bodyLarge,
+            'The ultimate digital vault for your wardrobe and Jewellryry. AI-powered styling that understands your unique aesthetic and unlocks endless combinations.',
+            style: JewellryVaultTypography.bodyLarge,
           ),
           const SizedBox(height: 56),
           Wrap(
@@ -299,13 +299,13 @@ class _HeroSection extends StatelessWidget {
               OutlinedButton(
                 onPressed: () {},
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: JewelVaultColors.primaryText,
-                  side: const BorderSide(color: JewelVaultColors.border, width: 1),
+                  foregroundColor: JewellryVaultColors.primaryText,
+                  side: const BorderSide(color: JewellryVaultColors.border, width: 1),
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  textStyle: JewelVaultTypography.labelLarge,
+                  textStyle: JewellryVaultTypography.labelLarge,
                 ),
                 child: const Text('Watch Demo'),
               ),
@@ -346,11 +346,11 @@ class _HeroSection extends StatelessWidget {
                     child: Container(
                       margin: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: JewelVaultColors.background,
+                        color: JewellryVaultColors.background,
                         borderRadius: BorderRadius.circular(24),
                       ),
                       child: const Center(
-                        child: Icon(Icons.checkroom_outlined, size: 64, color: JewelVaultColors.border),
+                        child: Icon(Icons.checkroom_outlined, size: 64, color: JewellryVaultColors.border),
                       ),
                     ),
                   ),
@@ -359,9 +359,9 @@ class _HeroSection extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Silk Slip Dress', style: JewelVaultTypography.headingMedium),
+                        Text('Silk Slip Dress', style: JewellryVaultTypography.headingMedium),
                         const SizedBox(height: 4),
-                        Text('Evening Wear', style: JewelVaultTypography.bodyMedium),
+                        Text('Evening Wear', style: JewellryVaultTypography.bodyMedium),
                       ],
                     ),
                   )
@@ -370,7 +370,7 @@ class _HeroSection extends StatelessWidget {
             ),
           ),
           
-          // Floating Jewelry Card
+          // Floating Jewellryry Card
           Positioned(
             left: isDesktop ? 0 : 10,
             top: isDesktop ? 60 : 20,
@@ -383,7 +383,7 @@ class _HeroSection extends StatelessWidget {
                 border: Border.all(color: Colors.white, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: JewelVaultColors.primaryEmerald.withOpacity(0.08),
+                    color: JewellryVaultColors.primaryEmerald.withOpacity(0.08),
                     blurRadius: 30,
                     offset: const Offset(-10, 15),
                   ),
@@ -400,11 +400,11 @@ class _HeroSection extends StatelessWidget {
                         child: Container(
                           margin: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: JewelVaultColors.background.withOpacity(0.5),
+                            color: JewellryVaultColors.background.withOpacity(0.5),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: const Center(
-                            child: Icon(Icons.diamond_outlined, size: 48, color: JewelVaultColors.primaryEmerald),
+                            child: Icon(Icons.diamond_outlined, size: 48, color: JewellryVaultColors.primaryEmerald),
                           ),
                         ),
                       ),
@@ -413,8 +413,8 @@ class _HeroSection extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Emerald Pendant', style: JewelVaultTypography.bodyLarge.copyWith(color: JewelVaultColors.primaryText, fontWeight: FontWeight.w500)),
-                            Text('Perfect Match', style: JewelVaultTypography.bodyMedium.copyWith(color: JewelVaultColors.primaryEmerald)),
+                            Text('Emerald Pendant', style: JewellryVaultTypography.bodyLarge.copyWith(color: JewellryVaultColors.primaryText, fontWeight: FontWeight.w500)),
+                            Text('Perfect Match', style: JewellryVaultTypography.bodyMedium.copyWith(color: JewellryVaultColors.primaryEmerald)),
                           ],
                         ),
                       )
@@ -432,11 +432,11 @@ class _HeroSection extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
-                color: JewelVaultColors.primaryEmerald,
+                color: JewellryVaultColors.primaryEmerald,
                 borderRadius: BorderRadius.circular(32),
                 boxShadow: [
                   BoxShadow(
-                    color: JewelVaultColors.primaryEmerald.withOpacity(0.3),
+                    color: JewellryVaultColors.primaryEmerald.withOpacity(0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -447,7 +447,7 @@ class _HeroSection extends StatelessWidget {
                 children: [
                   const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
                   const SizedBox(width: 8),
-                  Text('98% Match', style: JewelVaultTypography.labelLarge.copyWith(color: Colors.white)),
+                  Text('98% Match', style: JewellryVaultTypography.labelLarge.copyWith(color: Colors.white)),
                 ],
               ),
             ),
@@ -503,13 +503,13 @@ class _FeaturesSection extends StatelessWidget {
               children: [
                 Text(
                   'The Art of Curation',
-                  style: isDesktop ? JewelVaultTypography.displayLarge : JewelVaultTypography.displayMedium,
+                  style: isDesktop ? JewellryVaultTypography.displayLarge : JewellryVaultTypography.displayMedium,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Discover how JewelVault transforms your closet into a boutique experience with intelligent tools designed for the modern collector.',
-                  style: JewelVaultTypography.bodyLarge,
+                  'Discover how JewellryVault transforms your closet into a boutique experience with intelligent tools designed for the modern collector.',
+                  style: JewellryVaultTypography.bodyLarge,
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -532,7 +532,7 @@ class _FeaturesSection extends StatelessWidget {
                   child: _FeatureCard(
                     icon: Icons.auto_awesome_outlined,
                     title: 'AI Match Engine',
-                    description: 'Our proprietary intelligence pairs your jewelry with your garments, unlocking unseen aesthetic combinations.',
+                    description: 'Our proprietary intelligence pairs your Jewellryry with your garments, unlocking unseen aesthetic combinations.',
                   ),
                 ),
                 const SizedBox(width: 40),
@@ -558,7 +558,7 @@ class _FeaturesSection extends StatelessWidget {
                 const _FeatureCard(
                   icon: Icons.auto_awesome_outlined,
                   title: 'AI Match Engine',
-                  description: 'Our proprietary intelligence pairs your jewelry with your garments, unlocking unseen aesthetic combinations.',
+                  description: 'Our proprietary intelligence pairs your Jewellryry with your garments, unlocking unseen aesthetic combinations.',
                 ),
                 const SizedBox(height: 32),
                 const _FeatureCard(
@@ -606,12 +606,12 @@ class _FeatureCardState extends State<_FeatureCard> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(32),
           border: Border.all(
-            color: _isHovered ? JewelVaultColors.primaryEmerald.withOpacity(0.2) : Colors.white,
+            color: _isHovered ? JewellryVaultColors.primaryEmerald.withOpacity(0.2) : Colors.white,
           ),
           boxShadow: [
             BoxShadow(
               color: _isHovered 
-                  ? JewelVaultColors.primaryEmerald.withOpacity(0.08)
+                  ? JewellryVaultColors.primaryEmerald.withOpacity(0.08)
                   : Colors.black.withOpacity(0.03),
               blurRadius: _isHovered ? 40 : 20,
               offset: Offset(0, _isHovered ? 20 : 10),
@@ -627,8 +627,8 @@ class _FeatureCardState extends State<_FeatureCard> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: _isHovered 
-                      ? [JewelVaultColors.primaryEmerald, JewelVaultColors.darkEmerald]
-                      : [JewelVaultColors.background, JewelVaultColors.background],
+                      ? [JewellryVaultColors.primaryEmerald, JewellryVaultColors.darkEmerald]
+                      : [JewellryVaultColors.background, JewellryVaultColors.background],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -636,19 +636,19 @@ class _FeatureCardState extends State<_FeatureCard> {
               ),
               child: Icon(
                 widget.icon,
-                color: _isHovered ? Colors.white : JewelVaultColors.primaryEmerald,
+                color: _isHovered ? Colors.white : JewellryVaultColors.primaryEmerald,
                 size: 40,
               ),
             ),
             const SizedBox(height: 40),
             Text(
               widget.title,
-              style: JewelVaultTypography.headingLarge,
+              style: JewellryVaultTypography.headingLarge,
             ),
             const SizedBox(height: 20),
             Text(
               widget.description,
-              style: JewelVaultTypography.bodyLarge,
+              style: JewellryVaultTypography.bodyLarge,
             ),
           ],
         ),
@@ -674,7 +674,7 @@ class _HowItWorksSection extends StatelessWidget {
         children: [
           Text(
             'The Process',
-            style: isDesktop ? JewelVaultTypography.displayLarge : JewelVaultTypography.displayMedium,
+            style: isDesktop ? JewellryVaultTypography.displayLarge : JewellryVaultTypography.displayMedium,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 100),
@@ -757,7 +757,7 @@ class _TimelineStep extends StatelessWidget {
           style: GoogleFonts.inter(
             fontSize: 64,
             fontWeight: FontWeight.w200,
-            color: JewelVaultColors.border,
+            color: JewellryVaultColors.border,
             height: 1,
           ),
         ),
@@ -765,17 +765,17 @@ class _TimelineStep extends StatelessWidget {
         Container(
           height: 2,
           width: 80,
-          color: JewelVaultColors.primaryEmerald,
+          color: JewellryVaultColors.primaryEmerald,
         ),
         const SizedBox(height: 32),
         Text(
           title,
-          style: JewelVaultTypography.headingLarge,
+          style: JewellryVaultTypography.headingLarge,
         ),
         const SizedBox(height: 16),
         Text(
           description,
-          style: JewelVaultTypography.bodyLarge,
+          style: JewellryVaultTypography.bodyLarge,
         ),
       ],
     );
@@ -790,7 +790,7 @@ class _TestimonialSection extends StatelessWidget {
     final isDesktop = MediaQuery.of(context).size.width > 900;
 
     return Container(
-      color: JewelVaultColors.darkEmerald,
+      color: JewellryVaultColors.darkEmerald,
       padding: EdgeInsets.symmetric(
         horizontal: isDesktop ? 80 : 24,
         vertical: isDesktop ? 160 : 100,
@@ -800,8 +800,8 @@ class _TestimonialSection extends StatelessWidget {
           Text(
             'Curated Feedback',
             style: isDesktop 
-                ? JewelVaultTypography.displayLarge.copyWith(color: Colors.white) 
-                : JewelVaultTypography.displayMedium.copyWith(color: Colors.white),
+                ? JewellryVaultTypography.displayLarge.copyWith(color: Colors.white) 
+                : JewellryVaultTypography.displayMedium.copyWith(color: Colors.white),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 80),
@@ -847,18 +847,18 @@ class _MockReviewCard extends StatelessWidget {
           Row(
             children: List.generate(
               5, 
-              (index) => const Icon(Icons.star, color: JewelVaultColors.border, size: 16)
+              (index) => const Icon(Icons.star, color: JewellryVaultColors.border, size: 16)
             ),
           ),
           const SizedBox(height: 32),
           Text(
             '"Mock Review"',
-            style: JewelVaultTypography.headingMedium.copyWith(color: Colors.white),
+            style: JewellryVaultTypography.headingMedium.copyWith(color: Colors.white),
           ),
           const SizedBox(height: 16),
           Text(
             'This is a placeholder for a future review from a client or critic.',
-            style: JewelVaultTypography.bodyMedium.copyWith(color: Colors.white.withOpacity(0.6)),
+            style: JewellryVaultTypography.bodyMedium.copyWith(color: Colors.white.withOpacity(0.6)),
           ),
           const SizedBox(height: 48),
           Row(
@@ -910,7 +910,7 @@ class _FinalCTASection extends StatelessWidget {
     final isDesktop = MediaQuery.of(context).size.width > 900;
 
     return Container(
-      color: JewelVaultColors.whiteCard,
+      color: JewellryVaultColors.whiteCard,
       padding: EdgeInsets.symmetric(
         horizontal: isDesktop ? 80 : 24,
         vertical: isDesktop ? 160 : 100,
@@ -918,15 +918,15 @@ class _FinalCTASection extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.all(isDesktop ? 100 : 40),
         decoration: BoxDecoration(
-          color: JewelVaultColors.background,
+          color: JewellryVaultColors.background,
           borderRadius: BorderRadius.circular(40),
-          border: Border.all(color: JewelVaultColors.border.withOpacity(0.5)),
+          border: Border.all(color: JewellryVaultColors.border.withOpacity(0.5)),
         ),
         child: Column(
           children: [
             Text(
               'Ready to elevate your collection?',
-              style: isDesktop ? JewelVaultTypography.displayLarge : JewelVaultTypography.displayMedium,
+              style: isDesktop ? JewellryVaultTypography.displayLarge : JewellryVaultTypography.displayMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 48),
@@ -946,7 +946,7 @@ class _FooterSection extends StatelessWidget {
     final isDesktop = MediaQuery.of(context).size.width > 800;
     
     return Container(
-      color: JewelVaultColors.whiteCard,
+      color: JewellryVaultColors.whiteCard,
       padding: EdgeInsets.symmetric(
         horizontal: isDesktop ? 80 : 24,
         vertical: 64,
@@ -955,7 +955,7 @@ class _FooterSection extends StatelessWidget {
         children: [
           Container(
             height: 1,
-            color: JewelVaultColors.border,
+            color: JewellryVaultColors.border,
             margin: const EdgeInsets.only(bottom: 64),
           ),
           Flex(
@@ -965,11 +965,11 @@ class _FooterSection extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.diamond_outlined, color: JewelVaultColors.primaryEmerald, size: 24),
+                  const Icon(Icons.diamond_outlined, color: JewellryVaultColors.primaryEmerald, size: 24),
                   const SizedBox(width: 12),
                   Text(
-                    'JewelVault',
-                    style: JewelVaultTypography.headingMedium,
+                    'JewellryVault',
+                    style: JewellryVaultTypography.headingMedium,
                   ),
                 ],
               ),
@@ -986,8 +986,8 @@ class _FooterSection extends StatelessWidget {
               ),
               if (!isDesktop) const SizedBox(height: 48),
               Text(
-                '© ${DateTime.now().year} JewelVault. All rights reserved.',
-                style: JewelVaultTypography.bodyMedium,
+                '© ${DateTime.now().year} JewellryVault. All rights reserved.',
+                style: JewellryVaultTypography.bodyMedium,
               ),
             ],
           ),
@@ -1008,8 +1008,8 @@ class _FooterLink extends StatelessWidget {
       onTap: () {},
       child: Text(
         text,
-        style: JewelVaultTypography.bodyMedium.copyWith(
-          color: JewelVaultColors.primaryText,
+        style: JewellryVaultTypography.bodyMedium.copyWith(
+          color: JewellryVaultColors.primaryText,
           fontWeight: FontWeight.w500,
         ),
       ),
