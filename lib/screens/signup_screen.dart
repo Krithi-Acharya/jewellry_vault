@@ -9,7 +9,6 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-
   // formKey checks if all fields are filled correctly
   final formKey = GlobalKey<FormState>();
 
@@ -23,7 +22,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
   // Runs when user taps Sign Up
   void signup() async {
-
     // Check if all fields are valid
     if (formKey.currentState!.validate()) {
       try {
@@ -35,12 +33,11 @@ class _SignupScreenState extends State<SignupScreen> {
 
         // Go back to login page after signup
         Navigator.pop(context);
-
       } catch (e) {
         // Show error if signup fails
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }
@@ -48,7 +45,6 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
       // Cream background to match friend's theme
       backgroundColor: const Color(0xFFFCF9F4),
 
@@ -61,18 +57,19 @@ class _SignupScreenState extends State<SignupScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-
               // Logo image
               Image.asset('assets/logo.png', height: 120, width: 120),
               const SizedBox(height: 16),
 
               // Title
-              const Text('Create Account',
+              const Text(
+                'Create Account',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1A1815),
-                )),
+                ),
+              ),
               const SizedBox(height: 32),
 
               // Name field
@@ -115,10 +112,11 @@ class _SignupScreenState extends State<SignupScreen> {
                   border: const OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.lock),
                   suffixIcon: IconButton(
-                    icon: Icon(showPassword
-                      ? Icons.visibility
-                      : Icons.visibility_off),
-                    onPressed: () => setState(() => showPassword = !showPassword),
+                    icon: Icon(
+                      showPassword ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () =>
+                        setState(() => showPassword = !showPassword),
                   ),
                 ),
                 validator: (value) {
@@ -152,12 +150,13 @@ class _SignupScreenState extends State<SignupScreen> {
                   TextButton(
                     // Go back to login screen
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Login',
-                      style: TextStyle(color: Color(0xFF1B4332))),
+                    child: const Text(
+                      'Login',
+                      style: TextStyle(color: Color(0xFF1B4332)),
+                    ),
                   ),
                 ],
               ),
-
             ],
           ),
         ),

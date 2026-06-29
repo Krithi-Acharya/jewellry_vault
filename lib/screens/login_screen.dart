@@ -12,7 +12,6 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-
   // formKey checks if all fields are filled correctly
   final formKey = GlobalKey<FormState>();
 
@@ -25,7 +24,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Runs when user taps Login
   void login() async {
-
     // Check if all fields are valid
     if (formKey.currentState!.validate()) {
       try {
@@ -36,14 +34,15 @@ class _LoginScreenState extends State<LoginScreen> {
         );
 
         // Go to landing page after successful login
-        Navigator.pushReplacement(context,
-          MaterialPageRoute(builder: (context) => const LandingPage()));
-
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LandingPage()),
+        );
       } catch (e) {
         // Show error if login fails
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }
@@ -51,7 +50,6 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
       // Cream background to match friend's theme
       backgroundColor: const Color(0xFFFCF9F4),
 
@@ -64,18 +62,19 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-
               // Logo image
               Image.asset('assets/logo.png', height: 120, width: 120),
               const SizedBox(height: 16),
 
               // App title
-              const Text('JewelVault',
+              const Text(
+                'JewelVault',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1A1815), // dark color
-                )),
+                ),
+              ),
               const SizedBox(height: 32),
 
               // Email field with validation
@@ -105,10 +104,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   prefixIcon: const Icon(Icons.lock),
                   // Eye icon button
                   suffixIcon: IconButton(
-                    icon: Icon(showPassword
-                      ? Icons.visibility      // eye open = password visible
-                      : Icons.visibility_off), // eye closed = password hidden
-                    onPressed: () => setState(() => showPassword = !showPassword),
+                    icon: Icon(
+                      showPassword
+                          ? Icons
+                                .visibility // eye open = password visible
+                          : Icons.visibility_off,
+                    ), // eye closed = password hidden
+                    onPressed: () =>
+                        setState(() => showPassword = !showPassword),
                   ),
                 ),
                 validator: (value) {
@@ -123,10 +126,16 @@ class _LoginScreenState extends State<LoginScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => const ForgotPasswordScreen())),
-                  child: const Text('Forgot Password?',
-                    style: TextStyle(color: Color(0xFF1B4332))),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ForgotPasswordScreen(),
+                    ),
+                  ),
+                  child: const Text(
+                    'Forgot Password?',
+                    style: TextStyle(color: Color(0xFF1B4332)),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -152,14 +161,19 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   const Text("Don't have an account?"),
                   TextButton(
-                    onPressed: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => const SignupScreen())),
-                    child: const Text('Sign Up',
-                      style: TextStyle(color: Color(0xFF1B4332))),
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SignupScreen(),
+                      ),
+                    ),
+                    child: const Text(
+                      'Sign Up',
+                      style: TextStyle(color: Color(0xFF1B4332)),
+                    ),
                   ),
                 ],
               ),
-
             ],
           ),
         ),

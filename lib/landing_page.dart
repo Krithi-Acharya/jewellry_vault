@@ -1,8 +1,19 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'screens/dashboard_screen.dart';
 
-class JewelVaultColors {
+// ─────────────────────────────────────────────
+//  DESIGN TOKENS  (local to landing page only)
+// ─────────────────────────────────────────────
+
+// NOTE: JewelVaultColors and JewelVaultTypography are defined in
+// dashboard_screen.dart and shared across the app.
+// The classes below are LOCAL aliases used only inside landing_page.dart
+// to avoid a duplicate-class compile error.
+
+class _LandingColors {
   static const Color background = Color(0xFFFCF9F4);
   static const Color primaryEmerald = Color(0xFF1B4332);
   static const Color darkEmerald = Color(0xFF012D1D);
@@ -12,58 +23,51 @@ class JewelVaultColors {
   static const Color secondaryText = Color(0xFF6B6258);
 }
 
-class JewelVaultTypography {
+class _LandingTypography {
   static TextStyle displayMassive = GoogleFonts.fraunces(
     fontSize: 84,
     fontWeight: FontWeight.w400,
-    color: JewelVaultColors.primaryText,
+    color: _LandingColors.primaryText,
     height: 1.1,
     letterSpacing: -0.03,
   );
-
   static TextStyle displayLarge = GoogleFonts.fraunces(
     fontSize: 56,
     fontWeight: FontWeight.w400,
-    color: JewelVaultColors.primaryText,
+    color: _LandingColors.primaryText,
     height: 1.15,
     letterSpacing: -0.02,
   );
-
   static TextStyle displayMedium = GoogleFonts.fraunces(
     fontSize: 40,
     fontWeight: FontWeight.w400,
-    color: JewelVaultColors.primaryText,
+    color: _LandingColors.primaryText,
     height: 1.2,
     letterSpacing: -0.01,
   );
-
   static TextStyle headingLarge = GoogleFonts.fraunces(
     fontSize: 28,
     fontWeight: FontWeight.w500,
-    color: JewelVaultColors.primaryText,
+    color: _LandingColors.primaryText,
     height: 1.4,
   );
-
   static TextStyle headingMedium = GoogleFonts.fraunces(
     fontSize: 22,
     fontWeight: FontWeight.w500,
-    color: JewelVaultColors.primaryText,
+    color: _LandingColors.primaryText,
   );
-
   static TextStyle bodyLarge = GoogleFonts.inter(
     fontSize: 20,
     fontWeight: FontWeight.w300,
-    color: JewelVaultColors.secondaryText,
+    color: _LandingColors.secondaryText,
     height: 1.6,
   );
-
   static TextStyle bodyMedium = GoogleFonts.inter(
     fontSize: 16,
     fontWeight: FontWeight.w400,
-    color: JewelVaultColors.secondaryText,
+    color: _LandingColors.secondaryText,
     height: 1.6,
   );
-  
   static TextStyle labelLarge = GoogleFonts.inter(
     fontSize: 14,
     fontWeight: FontWeight.w500,
@@ -71,16 +75,43 @@ class JewelVaultTypography {
   );
 }
 
+// ─────────────────────────────────────────────
+//  NAVIGATION HELPERS
+// ─────────────────────────────────────────────
+
+void _goToLogin(BuildContext context) => Navigator.pushNamed(context, '/login');
+
+void _goToSignup(BuildContext context) =>
+    Navigator.pushNamed(context, '/signup');
+
+/// If the user is already signed in, go straight to the dashboard.
+/// Otherwise, send them to login.
+void _goToDashboard(BuildContext context) {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const DashboardScreen()),
+    );
+  } else {
+    Navigator.pushNamed(context, '/login');
+  }
+}
+
+// ─────────────────────────────────────────────
+//  LANDING PAGE
+// ─────────────────────────────────────────────
+
 class LandingPage extends StatelessWidget {
   const LandingPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: JewelVaultColors.background,
+      backgroundColor: _LandingColors.background,
       body: Stack(
         children: [
-          // Background ambient blurs
+          // Ambient background blurs
           Positioned(
             top: -200,
             right: -100,
@@ -89,7 +120,7 @@ class LandingPage extends StatelessWidget {
               height: 800,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: JewelVaultColors.primaryEmerald.withOpacity(0.04),
+                color: _LandingColors.primaryEmerald.withOpacity(0.04),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
@@ -105,7 +136,7 @@ class LandingPage extends StatelessWidget {
               height: 600,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: JewelVaultColors.primaryEmerald.withOpacity(0.03),
+                color: _LandingColors.primaryEmerald.withOpacity(0.03),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
@@ -113,11 +144,11 @@ class LandingPage extends StatelessWidget {
               ),
             ),
           ),
-          // Main Scroll Content
-          const SingleChildScrollView(
+          // Scrollable content
+          SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+              children: const [
                 _NavBar(),
                 _HeroSection(),
                 _FeaturesSection(),
@@ -134,13 +165,17 @@ class LandingPage extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────
+//  NAV BAR
+// ─────────────────────────────────────────────
+
 class _NavBar extends StatelessWidget {
   const _NavBar();
 
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 800;
-    
+
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isDesktop ? 80 : 24,
@@ -149,23 +184,33 @@ class _NavBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          // Logo
           Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: JewelVaultColors.primaryEmerald,
+                  color: _LandingColors.primaryEmerald,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.diamond_outlined, color: Colors.white, size: 24),
+                child: const Icon(
+                  Icons.diamond_outlined,
+                  color: Colors.white,
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 16),
               Text(
                 'JewelVault',
-                style: JewelVaultTypography.headingLarge.copyWith(fontSize: 24, letterSpacing: -0.5),
+                style: _LandingTypography.headingLarge.copyWith(
+                  fontSize: 24,
+                  letterSpacing: -0.5,
+                ),
               ),
             ],
           ),
+
+          // Desktop nav links
           if (isDesktop)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -180,35 +225,127 @@ class _NavBar extends StatelessWidget {
                   const SizedBox(width: 24),
                   _NavTextButton(text: 'How It Works'),
                   const SizedBox(width: 24),
-                  _NavTextButton(text: 'Login'),
+                  // LOGIN — now navigates properly
+                  _NavTextButton(
+                    text: 'Login',
+                    onTap: () => _goToLogin(context),
+                  ),
                 ],
               ),
             )
           else
+            // Mobile hamburger — opens bottom sheet menu
             IconButton(
-              icon: const Icon(Icons.menu, color: JewelVaultColors.primaryText),
-              onPressed: () {},
+              icon: const Icon(Icons.menu, color: _LandingColors.primaryText),
+              onPressed: () => _showMobileMenu(context),
             ),
+
+          // Desktop CTA
           if (isDesktop)
-            const _PrimaryButton(text: 'Get Started'),
+            _PrimaryButton(
+              text: 'My Dashboard',
+              onPressed: () => _goToDashboard(context),
+            ),
         ],
+      ),
+    );
+  }
+
+  void _showMobileMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: _LandingColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 28),
+            _MobileMenuTile(
+              icon: Icons.login,
+              label: 'Login',
+              onTap: () {
+                Navigator.pop(context);
+                _goToLogin(context);
+              },
+            ),
+            const SizedBox(height: 12),
+            _MobileMenuTile(
+              icon: Icons.person_add_outlined,
+              label: 'Create Account',
+              onTap: () {
+                Navigator.pop(context);
+                _goToSignup(context);
+              },
+            ),
+            const SizedBox(height: 12),
+            _MobileMenuTile(
+              icon: Icons.dashboard_outlined,
+              label: 'My Dashboard',
+              onTap: () {
+                Navigator.pop(context);
+                _goToDashboard(context);
+              },
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }
 }
 
+class _MobileMenuTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _MobileMenuTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+    onTap: onTap,
+    leading: Icon(icon, color: _LandingColors.primaryEmerald),
+    title: Text(
+      label,
+      style: _LandingTypography.labelLarge.copyWith(fontSize: 16),
+    ),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    tileColor: _LandingColors.background,
+  );
+}
+
 class _NavTextButton extends StatelessWidget {
   final String text;
+  final VoidCallback? onTap;
 
-  const _NavTextButton({required this.text});
+  const _NavTextButton({required this.text, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return TextButton(
-      onPressed: () {},
+      onPressed: onTap ?? () {},
       style: TextButton.styleFrom(
-        foregroundColor: JewelVaultColors.primaryText,
-        textStyle: JewelVaultTypography.labelLarge,
+        foregroundColor: _LandingColors.primaryText,
+        textStyle: _LandingTypography.labelLarge,
       ),
       child: Text(text),
     );
@@ -220,7 +357,11 @@ class _PrimaryButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool isDark;
 
-  const _PrimaryButton({required this.text, this.onPressed, this.isDark = true});
+  const _PrimaryButton({
+    required this.text,
+    this.onPressed,
+    this.isDark = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -229,29 +370,37 @@ class _PrimaryButton extends StatelessWidget {
         boxShadow: [
           if (isDark)
             BoxShadow(
-              color: JewelVaultColors.primaryEmerald.withOpacity(0.3),
+              color: _LandingColors.primaryEmerald.withOpacity(0.3),
               blurRadius: 20,
               offset: const Offset(0, 8),
-            )
+            ),
         ],
       ),
       child: ElevatedButton(
         onPressed: onPressed ?? () {},
         style: ElevatedButton.styleFrom(
-          backgroundColor: isDark ? JewelVaultColors.primaryEmerald : Colors.white,
-          foregroundColor: isDark ? Colors.white : JewelVaultColors.primaryEmerald,
+          backgroundColor: isDark
+              ? _LandingColors.primaryEmerald
+              : Colors.white,
+          foregroundColor: isDark
+              ? Colors.white
+              : _LandingColors.primaryEmerald,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          textStyle: JewelVaultTypography.labelLarge,
+          textStyle: _LandingTypography.labelLarge,
         ),
         child: Text(text),
       ),
     );
   }
 }
+
+// ─────────────────────────────────────────────
+//  HERO SECTION
+// ─────────────────────────────────────────────
 
 class _HeroSection extends StatelessWidget {
   const _HeroSection();
@@ -261,7 +410,7 @@ class _HeroSection extends StatelessWidget {
     final width = MediaQuery.of(context).size.width;
     final height = MediaQuery.of(context).size.height;
     final isDesktop = width > 1000;
-    
+
     final textContent = ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 600),
       child: Column(
@@ -271,41 +420,59 @@ class _HeroSection extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              border: Border.all(color: JewelVaultColors.primaryEmerald.withOpacity(0.2)),
+              border: Border.all(
+                color: _LandingColors.primaryEmerald.withOpacity(0.2),
+              ),
               borderRadius: BorderRadius.circular(32),
               color: Colors.white.withOpacity(0.5),
             ),
             child: Text(
               'Introducing AI Styling',
-              style: JewelVaultTypography.labelLarge.copyWith(color: JewelVaultColors.primaryEmerald),
+              style: _LandingTypography.labelLarge.copyWith(
+                color: _LandingColors.primaryEmerald,
+              ),
             ),
           ),
           const SizedBox(height: 32),
           Text(
             'Your Curated Collection,\nPerfectly Matched.',
-            style: isDesktop ? JewelVaultTypography.displayMassive : JewelVaultTypography.displayMedium,
+            style: isDesktop
+                ? _LandingTypography.displayMassive
+                : _LandingTypography.displayMedium,
           ),
           const SizedBox(height: 32),
           Text(
             'The ultimate digital vault for your wardrobe and jewelry. AI-powered styling that understands your unique aesthetic and unlocks endless combinations.',
-            style: JewelVaultTypography.bodyLarge,
+            style: _LandingTypography.bodyLarge,
           ),
           const SizedBox(height: 56),
           Wrap(
             spacing: 24,
             runSpacing: 24,
             children: [
-              const _PrimaryButton(text: 'Begin Your Collection'),
+              // "Begin Your Collection" → signup
+              Builder(
+                builder: (ctx) => _PrimaryButton(
+                  text: 'Begin Your Collection',
+                  onPressed: () => _goToSignup(ctx),
+                ),
+              ),
               OutlinedButton(
                 onPressed: () {},
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: JewelVaultColors.primaryText,
-                  side: const BorderSide(color: JewelVaultColors.border, width: 1),
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                  foregroundColor: _LandingColors.primaryText,
+                  side: const BorderSide(
+                    color: _LandingColors.border,
+                    width: 1,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 24,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  textStyle: JewelVaultTypography.labelLarge,
+                  textStyle: _LandingTypography.labelLarge,
                 ),
                 child: const Text('Watch Demo'),
               ),
@@ -321,7 +488,7 @@ class _HeroSection extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Base Dress Card
+          // Main dress card
           Positioned(
             right: isDesktop ? 60 : 20,
             bottom: isDesktop ? 80 : 40,
@@ -346,11 +513,15 @@ class _HeroSection extends StatelessWidget {
                     child: Container(
                       margin: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: JewelVaultColors.background,
+                        color: _LandingColors.background,
                         borderRadius: BorderRadius.circular(24),
                       ),
                       child: const Center(
-                        child: Icon(Icons.checkroom_outlined, size: 64, color: JewelVaultColors.border),
+                        child: Icon(
+                          Icons.checkroom_outlined,
+                          size: 64,
+                          color: _LandingColors.border,
+                        ),
                       ),
                     ),
                   ),
@@ -359,18 +530,24 @@ class _HeroSection extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Silk Slip Dress', style: JewelVaultTypography.headingMedium),
+                        Text(
+                          'Silk Slip Dress',
+                          style: _LandingTypography.headingMedium,
+                        ),
                         const SizedBox(height: 4),
-                        Text('Evening Wear', style: JewelVaultTypography.bodyMedium),
+                        Text(
+                          'Evening Wear',
+                          style: _LandingTypography.bodyMedium,
+                        ),
                       ],
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
           ),
-          
-          // Floating Jewelry Card
+
+          // Floating jewelry card
           Positioned(
             left: isDesktop ? 0 : 10,
             top: isDesktop ? 60 : 20,
@@ -383,7 +560,7 @@ class _HeroSection extends StatelessWidget {
                 border: Border.all(color: Colors.white, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: JewelVaultColors.primaryEmerald.withOpacity(0.08),
+                    color: _LandingColors.primaryEmerald.withOpacity(0.08),
                     blurRadius: 30,
                     offset: const Offset(-10, 15),
                   ),
@@ -400,11 +577,15 @@ class _HeroSection extends StatelessWidget {
                         child: Container(
                           margin: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: JewelVaultColors.background.withOpacity(0.5),
+                            color: _LandingColors.background.withOpacity(0.5),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: const Center(
-                            child: Icon(Icons.diamond_outlined, size: 48, color: JewelVaultColors.primaryEmerald),
+                            child: Icon(
+                              Icons.diamond_outlined,
+                              size: 48,
+                              color: _LandingColors.primaryEmerald,
+                            ),
                           ),
                         ),
                       ),
@@ -413,11 +594,22 @@ class _HeroSection extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Emerald Pendant', style: JewelVaultTypography.bodyLarge.copyWith(color: JewelVaultColors.primaryText, fontWeight: FontWeight.w500)),
-                            Text('Perfect Match', style: JewelVaultTypography.bodyMedium.copyWith(color: JewelVaultColors.primaryEmerald)),
+                            Text(
+                              'Emerald Pendant',
+                              style: _LandingTypography.bodyLarge.copyWith(
+                                color: _LandingColors.primaryText,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              'Perfect Match',
+                              style: _LandingTypography.bodyMedium.copyWith(
+                                color: _LandingColors.primaryEmerald,
+                              ),
+                            ),
                           ],
                         ),
-                      )
+                      ),
                     ],
                   ),
                 ),
@@ -425,18 +617,18 @@ class _HeroSection extends StatelessWidget {
             ),
           ),
 
-          // AI Match Score Badge
+          // Match score badge
           Positioned(
             right: isDesktop ? 20 : 0,
             top: isDesktop ? 160 : 100,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
-                color: JewelVaultColors.primaryEmerald,
+                color: _LandingColors.primaryEmerald,
                 borderRadius: BorderRadius.circular(32),
                 boxShadow: [
                   BoxShadow(
-                    color: JewelVaultColors.primaryEmerald.withOpacity(0.3),
+                    color: _LandingColors.primaryEmerald.withOpacity(0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -447,7 +639,12 @@ class _HeroSection extends StatelessWidget {
                 children: [
                   const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
                   const SizedBox(width: 8),
-                  Text('98% Match', style: JewelVaultTypography.labelLarge.copyWith(color: Colors.white)),
+                  Text(
+                    '98% Match',
+                    style: _LandingTypography.labelLarge.copyWith(
+                      color: Colors.white,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -457,9 +654,7 @@ class _HeroSection extends StatelessWidget {
     );
 
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: isDesktop ? 80 : 24,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: isDesktop ? 80 : 24),
       constraints: BoxConstraints(minHeight: isDesktop ? height * 0.85 : 800),
       child: isDesktop
           ? Row(
@@ -483,6 +678,10 @@ class _HeroSection extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────
+//  FEATURES SECTION  (unchanged logic)
+// ─────────────────────────────────────────────
+
 class _FeaturesSection extends StatelessWidget {
   const _FeaturesSection();
 
@@ -503,13 +702,15 @@ class _FeaturesSection extends StatelessWidget {
               children: [
                 Text(
                   'The Art of Curation',
-                  style: isDesktop ? JewelVaultTypography.displayLarge : JewelVaultTypography.displayMedium,
+                  style: isDesktop
+                      ? _LandingTypography.displayLarge
+                      : _LandingTypography.displayMedium,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
                 Text(
                   'Discover how JewelVault transforms your closet into a boutique experience with intelligent tools designed for the modern collector.',
-                  style: JewelVaultTypography.bodyLarge,
+                  style: _LandingTypography.bodyLarge,
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -517,54 +718,60 @@ class _FeaturesSection extends StatelessWidget {
           ),
           const SizedBox(height: 80),
           if (isDesktop)
-            Row(
+            const Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Expanded(
+                Expanded(
                   child: _FeatureCard(
                     icon: Icons.inventory_2_outlined,
                     title: 'Digital Vault',
-                    description: 'Digitize your entire collection with high-fidelity cataloging. Keep immaculate records of every piece you own.',
+                    description:
+                        'Digitize your entire collection with high-fidelity cataloging. Keep immaculate records of every piece you own.',
                   ),
                 ),
-                const SizedBox(width: 40),
-                const Expanded(
+                SizedBox(width: 40),
+                Expanded(
                   child: _FeatureCard(
                     icon: Icons.auto_awesome_outlined,
                     title: 'AI Match Engine',
-                    description: 'Our proprietary intelligence pairs your jewelry with your garments, unlocking unseen aesthetic combinations.',
+                    description:
+                        'Our proprietary intelligence pairs your jewelry with your garments, unlocking unseen aesthetic combinations.',
                   ),
                 ),
-                const SizedBox(width: 40),
-                const Expanded(
+                SizedBox(width: 40),
+                Expanded(
                   child: _FeatureCard(
                     icon: Icons.view_carousel_outlined,
                     title: 'Lookbook Canvas',
-                    description: 'Plan your outfits visually. Drag, drop, and design your daily looks on an elegant, infinite digital canvas.',
+                    description:
+                        'Plan your outfits visually. Drag, drop, and design your daily looks on an elegant, infinite digital canvas.',
                   ),
                 ),
               ],
             )
           else
-            Column(
+            const Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const _FeatureCard(
+                _FeatureCard(
                   icon: Icons.inventory_2_outlined,
                   title: 'Digital Vault',
-                  description: 'Digitize your entire collection with high-fidelity cataloging. Keep immaculate records of every piece you own.',
+                  description:
+                      'Digitize your entire collection with high-fidelity cataloging. Keep immaculate records of every piece you own.',
                 ),
-                const SizedBox(height: 32),
-                const _FeatureCard(
+                SizedBox(height: 32),
+                _FeatureCard(
                   icon: Icons.auto_awesome_outlined,
                   title: 'AI Match Engine',
-                  description: 'Our proprietary intelligence pairs your jewelry with your garments, unlocking unseen aesthetic combinations.',
+                  description:
+                      'Our proprietary intelligence pairs your jewelry with your garments, unlocking unseen aesthetic combinations.',
                 ),
-                const SizedBox(height: 32),
-                const _FeatureCard(
+                SizedBox(height: 32),
+                _FeatureCard(
                   icon: Icons.view_carousel_outlined,
                   title: 'Lookbook Canvas',
-                  description: 'Plan your outfits visually. Drag, drop, and design your daily looks on an elegant, infinite digital canvas.',
+                  description:
+                      'Plan your outfits visually. Drag, drop, and design your daily looks on an elegant, infinite digital canvas.',
                 ),
               ],
             ),
@@ -606,16 +813,18 @@ class _FeatureCardState extends State<_FeatureCard> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(32),
           border: Border.all(
-            color: _isHovered ? JewelVaultColors.primaryEmerald.withOpacity(0.2) : Colors.white,
+            color: _isHovered
+                ? _LandingColors.primaryEmerald.withOpacity(0.2)
+                : Colors.white,
           ),
           boxShadow: [
             BoxShadow(
-              color: _isHovered 
-                  ? JewelVaultColors.primaryEmerald.withOpacity(0.08)
+              color: _isHovered
+                  ? _LandingColors.primaryEmerald.withOpacity(0.08)
                   : Colors.black.withOpacity(0.03),
               blurRadius: _isHovered ? 40 : 20,
               offset: Offset(0, _isHovered ? 20 : 10),
-            )
+            ),
           ],
         ),
         child: Column(
@@ -626,9 +835,12 @@ class _FeatureCardState extends State<_FeatureCard> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: _isHovered 
-                      ? [JewelVaultColors.primaryEmerald, JewelVaultColors.darkEmerald]
-                      : [JewelVaultColors.background, JewelVaultColors.background],
+                  colors: _isHovered
+                      ? [
+                          _LandingColors.primaryEmerald,
+                          _LandingColors.darkEmerald,
+                        ]
+                      : [_LandingColors.background, _LandingColors.background],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -636,26 +848,26 @@ class _FeatureCardState extends State<_FeatureCard> {
               ),
               child: Icon(
                 widget.icon,
-                color: _isHovered ? Colors.white : JewelVaultColors.primaryEmerald,
+                color: _isHovered
+                    ? Colors.white
+                    : _LandingColors.primaryEmerald,
                 size: 40,
               ),
             ),
             const SizedBox(height: 40),
-            Text(
-              widget.title,
-              style: JewelVaultTypography.headingLarge,
-            ),
+            Text(widget.title, style: _LandingTypography.headingLarge),
             const SizedBox(height: 20),
-            Text(
-              widget.description,
-              style: JewelVaultTypography.bodyLarge,
-            ),
+            Text(widget.description, style: _LandingTypography.bodyLarge),
           ],
         ),
       ),
     );
   }
 }
+
+// ─────────────────────────────────────────────
+//  HOW IT WORKS  (unchanged)
+// ─────────────────────────────────────────────
 
 class _HowItWorksSection extends StatelessWidget {
   const _HowItWorksSection();
@@ -674,59 +886,67 @@ class _HowItWorksSection extends StatelessWidget {
         children: [
           Text(
             'The Process',
-            style: isDesktop ? JewelVaultTypography.displayLarge : JewelVaultTypography.displayMedium,
+            style: isDesktop
+                ? _LandingTypography.displayLarge
+                : _LandingTypography.displayMedium,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 100),
           if (isDesktop)
-            Row(
+            const Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Expanded(
+                Expanded(
                   child: _TimelineStep(
                     step: '01',
                     title: 'Upload Collection',
-                    description: 'Snap photos or sync from your favorite boutiques. We automatically isolate items for a clean catalog look.',
+                    description:
+                        'Snap photos or sync from your favorite boutiques. We automatically isolate items for a clean catalog look.',
                   ),
                 ),
-                const SizedBox(width: 80),
-                const Expanded(
+                SizedBox(width: 80),
+                Expanded(
                   child: _TimelineStep(
                     step: '02',
                     title: 'AI Understands',
-                    description: 'Our engine analyzes color palettes, textures, and silhouettes to build your personalized style profile.',
+                    description:
+                        'Our engine analyzes color palettes, textures, and silhouettes to build your personalized style profile.',
                   ),
                 ),
-                const SizedBox(width: 80),
-                const Expanded(
+                SizedBox(width: 80),
+                Expanded(
                   child: _TimelineStep(
                     step: '03',
                     title: 'Perfect Matches',
-                    description: 'Get daily curation. See which necklace perfectly complements your new dress before you even put it on.',
+                    description:
+                        'Get daily curation. See which necklace perfectly complements your new dress before you even put it on.',
                   ),
                 ),
               ],
             )
           else
-            Column(
+            const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _TimelineStep(
+                _TimelineStep(
                   step: '01',
                   title: 'Upload Collection',
-                  description: 'Snap photos or sync from your favorite boutiques. We automatically isolate items for a clean catalog look.',
+                  description:
+                      'Snap photos or sync from your favorite boutiques. We automatically isolate items for a clean catalog look.',
                 ),
-                const SizedBox(height: 48),
-                const _TimelineStep(
+                SizedBox(height: 48),
+                _TimelineStep(
                   step: '02',
                   title: 'AI Understands',
-                  description: 'Our engine analyzes color palettes, textures, and silhouettes to build your personalized style profile.',
+                  description:
+                      'Our engine analyzes color palettes, textures, and silhouettes to build your personalized style profile.',
                 ),
-                const SizedBox(height: 48),
-                const _TimelineStep(
+                SizedBox(height: 48),
+                _TimelineStep(
                   step: '03',
                   title: 'Perfect Matches',
-                  description: 'Get daily curation. See which necklace perfectly complements your new dress before you even put it on.',
+                  description:
+                      'Get daily curation. See which necklace perfectly complements your new dress before you even put it on.',
                 ),
               ],
             ),
@@ -757,30 +977,24 @@ class _TimelineStep extends StatelessWidget {
           style: GoogleFonts.inter(
             fontSize: 64,
             fontWeight: FontWeight.w200,
-            color: JewelVaultColors.border,
+            color: _LandingColors.border,
             height: 1,
           ),
         ),
         const SizedBox(height: 32),
-        Container(
-          height: 2,
-          width: 80,
-          color: JewelVaultColors.primaryEmerald,
-        ),
+        Container(height: 2, width: 80, color: _LandingColors.primaryEmerald),
         const SizedBox(height: 32),
-        Text(
-          title,
-          style: JewelVaultTypography.headingLarge,
-        ),
+        Text(title, style: _LandingTypography.headingLarge),
         const SizedBox(height: 16),
-        Text(
-          description,
-          style: JewelVaultTypography.bodyLarge,
-        ),
+        Text(description, style: _LandingTypography.bodyLarge),
       ],
     );
   }
 }
+
+// ─────────────────────────────────────────────
+//  TESTIMONIALS  (unchanged)
+// ─────────────────────────────────────────────
 
 class _TestimonialSection extends StatelessWidget {
   const _TestimonialSection();
@@ -790,7 +1004,7 @@ class _TestimonialSection extends StatelessWidget {
     final isDesktop = MediaQuery.of(context).size.width > 900;
 
     return Container(
-      color: JewelVaultColors.darkEmerald,
+      color: _LandingColors.darkEmerald,
       padding: EdgeInsets.symmetric(
         horizontal: isDesktop ? 80 : 24,
         vertical: isDesktop ? 160 : 100,
@@ -799,21 +1013,19 @@ class _TestimonialSection extends StatelessWidget {
         children: [
           Text(
             'Curated Feedback',
-            style: isDesktop 
-                ? JewelVaultTypography.displayLarge.copyWith(color: Colors.white) 
-                : JewelVaultTypography.displayMedium.copyWith(color: Colors.white),
+            style: isDesktop
+                ? _LandingTypography.displayLarge.copyWith(color: Colors.white)
+                : _LandingTypography.displayMedium.copyWith(
+                    color: Colors.white,
+                  ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 80),
-          Wrap(
+          const Wrap(
             spacing: 32,
             runSpacing: 32,
             alignment: WrapAlignment.center,
-            children: const [
-              _MockReviewCard(),
-              _MockReviewCard(),
-              _MockReviewCard(),
-            ],
+            children: [_MockReviewCard(), _MockReviewCard(), _MockReviewCard()],
           ),
         ],
       ),
@@ -846,19 +1058,27 @@ class _MockReviewCard extends StatelessWidget {
         children: [
           Row(
             children: List.generate(
-              5, 
-              (index) => const Icon(Icons.star, color: JewelVaultColors.border, size: 16)
+              5,
+              (_) => const Icon(
+                Icons.star,
+                color: _LandingColors.border,
+                size: 16,
+              ),
             ),
           ),
           const SizedBox(height: 32),
           Text(
             '"Mock Review"',
-            style: JewelVaultTypography.headingMedium.copyWith(color: Colors.white),
+            style: _LandingTypography.headingMedium.copyWith(
+              color: Colors.white,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
             'This is a placeholder for a future review from a client or critic.',
-            style: JewelVaultTypography.bodyMedium.copyWith(color: Colors.white.withOpacity(0.6)),
+            style: _LandingTypography.bodyMedium.copyWith(
+              color: Colors.white.withOpacity(0.6),
+            ),
           ),
           const SizedBox(height: 48),
           Row(
@@ -876,21 +1096,21 @@ class _MockReviewCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 100, 
-                    height: 12, 
+                    width: 100,
+                    height: 12,
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(4),
-                    )
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Container(
-                    width: 60, 
-                    height: 10, 
+                    width: 60,
+                    height: 10,
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
-                    )
+                    ),
                   ),
                 ],
               ),
@@ -902,6 +1122,10 @@ class _MockReviewCard extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────
+//  FINAL CTA  — "Create Your Vault Today" → signup
+// ─────────────────────────────────────────────
+
 class _FinalCTASection extends StatelessWidget {
   const _FinalCTASection();
 
@@ -910,7 +1134,7 @@ class _FinalCTASection extends StatelessWidget {
     final isDesktop = MediaQuery.of(context).size.width > 900;
 
     return Container(
-      color: JewelVaultColors.whiteCard,
+      color: _LandingColors.whiteCard,
       padding: EdgeInsets.symmetric(
         horizontal: isDesktop ? 80 : 24,
         vertical: isDesktop ? 160 : 100,
@@ -918,19 +1142,27 @@ class _FinalCTASection extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.all(isDesktop ? 100 : 40),
         decoration: BoxDecoration(
-          color: JewelVaultColors.background,
+          color: _LandingColors.background,
           borderRadius: BorderRadius.circular(40),
-          border: Border.all(color: JewelVaultColors.border.withOpacity(0.5)),
+          border: Border.all(color: _LandingColors.border.withOpacity(0.5)),
         ),
         child: Column(
           children: [
             Text(
               'Ready to elevate your collection?',
-              style: isDesktop ? JewelVaultTypography.displayLarge : JewelVaultTypography.displayMedium,
+              style: isDesktop
+                  ? _LandingTypography.displayLarge
+                  : _LandingTypography.displayMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 48),
-            const _PrimaryButton(text: 'Create Your Vault Today'),
+            // Navigates to signup
+            Builder(
+              builder: (ctx) => _PrimaryButton(
+                text: 'Create Your Vault Today',
+                onPressed: () => _goToSignup(ctx),
+              ),
+            ),
           ],
         ),
       ),
@@ -938,15 +1170,19 @@ class _FinalCTASection extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────
+//  FOOTER  (unchanged)
+// ─────────────────────────────────────────────
+
 class _FooterSection extends StatelessWidget {
   const _FooterSection();
 
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 800;
-    
+
     return Container(
-      color: JewelVaultColors.whiteCard,
+      color: _LandingColors.whiteCard,
       padding: EdgeInsets.symmetric(
         horizontal: isDesktop ? 80 : 24,
         vertical: 64,
@@ -955,39 +1191,44 @@ class _FooterSection extends StatelessWidget {
         children: [
           Container(
             height: 1,
-            color: JewelVaultColors.border,
+            color: _LandingColors.border,
             margin: const EdgeInsets.only(bottom: 64),
           ),
           Flex(
             direction: isDesktop ? Axis.horizontal : Axis.vertical,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: isDesktop ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+            crossAxisAlignment: isDesktop
+                ? CrossAxisAlignment.center
+                : CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Icon(Icons.diamond_outlined, color: JewelVaultColors.primaryEmerald, size: 24),
-                  const SizedBox(width: 12),
-                  Text(
-                    'JewelVault',
-                    style: JewelVaultTypography.headingMedium,
+                  const Icon(
+                    Icons.diamond_outlined,
+                    color: _LandingColors.primaryEmerald,
+                    size: 24,
                   ),
+                  const SizedBox(width: 12),
+                  Text('JewelVault', style: _LandingTypography.headingMedium),
                 ],
               ),
               if (!isDesktop) const SizedBox(height: 48),
               Row(
-                mainAxisAlignment: isDesktop ? MainAxisAlignment.end : MainAxisAlignment.start,
-                children: [
+                mainAxisAlignment: isDesktop
+                    ? MainAxisAlignment.end
+                    : MainAxisAlignment.start,
+                children: const [
                   _FooterLink(text: 'The Closet'),
-                  const SizedBox(width: 40),
+                  SizedBox(width: 40),
                   _FooterLink(text: 'AI Matching'),
-                  const SizedBox(width: 40),
+                  SizedBox(width: 40),
                   _FooterLink(text: 'Privacy'),
                 ],
               ),
               if (!isDesktop) const SizedBox(height: 48),
               Text(
                 '© ${DateTime.now().year} JewelVault. All rights reserved.',
-                style: JewelVaultTypography.bodyMedium,
+                style: _LandingTypography.bodyMedium,
               ),
             ],
           ),
@@ -999,20 +1240,17 @@ class _FooterSection extends StatelessWidget {
 
 class _FooterLink extends StatelessWidget {
   final String text;
-
   const _FooterLink({required this.text});
 
   @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {},
-      child: Text(
-        text,
-        style: JewelVaultTypography.bodyMedium.copyWith(
-          color: JewelVaultColors.primaryText,
-          fontWeight: FontWeight.w500,
-        ),
+  Widget build(BuildContext context) => InkWell(
+    onTap: () {},
+    child: Text(
+      text,
+      style: _LandingTypography.bodyMedium.copyWith(
+        color: _LandingColors.primaryText,
+        fontWeight: FontWeight.w500,
       ),
-    );
-  }
+    ),
+  );
 }
