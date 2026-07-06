@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'JewelVault',
+      title: 'JewellryVault',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1B4332)),
@@ -41,9 +41,9 @@ class MyApp extends StatelessWidget {
 }
 
 /// Decides the first screen the user sees, based on sign-in state.
-/// Flow: Login -> Landing -> Dashboard.
-///   - Not signed in  -> LoginScreen (first screen)
-///   - Signed in      -> LandingPage (the gateway to the Dashboard)
+/// Flow: LandingPage → Login → Dashboard.
+///   - Not signed in  → LandingPage (user clicks "Get Started" to reach Login)
+///   - Signed in      → DashboardScreen (skip straight to dashboard)
 class _AuthGate extends StatelessWidget {
   const _AuthGate();
 
@@ -62,13 +62,12 @@ class _AuthGate extends StatelessWidget {
         }
 
         if (snapshot.hasData && snapshot.data != null) {
-          // Already signed in: land on the Landing page (user can
-          // tap "My Dashboard" from there to go to the Dashboard).
-          return const LandingPage();
+          // Already signed in: go straight to Dashboard.
+          return const DashboardScreen();
         }
 
-        // Not signed in: Login is the very first screen shown.
-        return const LoginScreen();
+        // Not signed in: show the Landing Page first.
+        return const LandingPage();
       },
     );
   }

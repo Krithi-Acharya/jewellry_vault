@@ -4,14 +4,19 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'screens/dashboard_screen.dart';
 
-// ─────────────────────────────────────────────
-//  DESIGN TOKENS  (local to landing page only)
-// ─────────────────────────────────────────────
-
-// NOTE: JewelVaultColors and JewelVaultTypography are defined in
-// dashboard_screen.dart and shared across the app.
-// The classes below are LOCAL aliases used only inside landing_page.dart
-// to avoid a duplicate-class compile error.
+void _goToLogin(BuildContext context) => Navigator.pushNamed(context, '/login');
+void _goToSignup(BuildContext context) => Navigator.pushNamed(context, '/signup');
+void _goToDashboard(BuildContext context) {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const DashboardScreen()),
+    );
+  } else {
+    Navigator.pushNamed(context, '/login');
+  }
+}
 
 class _LandingColors {
   static const Color background = Color(0xFFFCF9F4);
@@ -31,6 +36,7 @@ class _LandingTypography {
     height: 1.1,
     letterSpacing: -0.03,
   );
+
   static TextStyle displayLarge = GoogleFonts.fraunces(
     fontSize: 56,
     fontWeight: FontWeight.w400,
@@ -38,6 +44,7 @@ class _LandingTypography {
     height: 1.15,
     letterSpacing: -0.02,
   );
+
   static TextStyle displayMedium = GoogleFonts.fraunces(
     fontSize: 40,
     fontWeight: FontWeight.w400,
@@ -45,62 +52,40 @@ class _LandingTypography {
     height: 1.2,
     letterSpacing: -0.01,
   );
+
   static TextStyle headingLarge = GoogleFonts.fraunces(
     fontSize: 28,
     fontWeight: FontWeight.w500,
     color: _LandingColors.primaryText,
     height: 1.4,
   );
+
   static TextStyle headingMedium = GoogleFonts.fraunces(
     fontSize: 22,
     fontWeight: FontWeight.w500,
     color: _LandingColors.primaryText,
   );
+
   static TextStyle bodyLarge = GoogleFonts.inter(
     fontSize: 20,
     fontWeight: FontWeight.w300,
     color: _LandingColors.secondaryText,
     height: 1.6,
   );
+
   static TextStyle bodyMedium = GoogleFonts.inter(
     fontSize: 16,
     fontWeight: FontWeight.w400,
     color: _LandingColors.secondaryText,
     height: 1.6,
   );
+  
   static TextStyle labelLarge = GoogleFonts.inter(
     fontSize: 14,
     fontWeight: FontWeight.w500,
     letterSpacing: 0.5,
   );
 }
-
-// ─────────────────────────────────────────────
-//  NAVIGATION HELPERS
-// ─────────────────────────────────────────────
-
-void _goToLogin(BuildContext context) => Navigator.pushNamed(context, '/login');
-
-void _goToSignup(BuildContext context) =>
-    Navigator.pushNamed(context, '/signup');
-
-/// If the user is already signed in, go straight to the dashboard.
-/// Otherwise, send them to login.
-void _goToDashboard(BuildContext context) {
-  final user = FirebaseAuth.instance.currentUser;
-  if (user != null) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const DashboardScreen()),
-    );
-  } else {
-    Navigator.pushNamed(context, '/login');
-  }
-}
-
-// ─────────────────────────────────────────────
-//  LANDING PAGE
-// ─────────────────────────────────────────────
 
 class LandingPage extends StatelessWidget {
   const LandingPage({super.key});
@@ -111,7 +96,7 @@ class LandingPage extends StatelessWidget {
       backgroundColor: _LandingColors.background,
       body: Stack(
         children: [
-          // Ambient background blurs
+          // Background ambient blurs
           Positioned(
             top: -200,
             right: -100,
@@ -144,11 +129,11 @@ class LandingPage extends StatelessWidget {
               ),
             ),
           ),
-          // Scrollable content
-          SingleChildScrollView(
+          // Main Scroll Content
+          const SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: const [
+              children: [
                 _NavBar(),
                 _HeroSection(),
                 _FeaturesSection(),
@@ -165,17 +150,13 @@ class LandingPage extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-//  NAV BAR
-// ─────────────────────────────────────────────
-
 class _NavBar extends StatelessWidget {
   const _NavBar();
 
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 800;
-
+    
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isDesktop ? 80 : 24,
@@ -184,7 +165,6 @@ class _NavBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Logo
           Row(
             children: [
               Container(
@@ -193,24 +173,15 @@ class _NavBar extends StatelessWidget {
                   color: _LandingColors.primaryEmerald,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
-                  Icons.diamond_outlined,
-                  color: Colors.white,
-                  size: 24,
-                ),
+                child: const Icon(Icons.diamond_outlined, color: Colors.white, size: 24),
               ),
               const SizedBox(width: 16),
               Text(
-                'JewelVault',
-                style: _LandingTypography.headingLarge.copyWith(
-                  fontSize: 24,
-                  letterSpacing: -0.5,
-                ),
+                'JewellryVault',
+                style: _LandingTypography.headingLarge.copyWith(fontSize: 24, letterSpacing: -0.5),
               ),
             ],
           ),
-
-          // Desktop nav links
           if (isDesktop)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -225,124 +196,39 @@ class _NavBar extends StatelessWidget {
                   const SizedBox(width: 24),
                   _NavTextButton(text: 'How It Works'),
                   const SizedBox(width: 24),
-                  // LOGIN — now navigates properly
                   _NavTextButton(
                     text: 'Login',
-                    onTap: () => _goToLogin(context),
+                    onPressed: () => _goToLogin(context),
                   ),
                 ],
               ),
             )
           else
-            // Mobile hamburger — opens bottom sheet menu
             IconButton(
               icon: const Icon(Icons.menu, color: _LandingColors.primaryText),
-              onPressed: () => _showMobileMenu(context),
+              onPressed: () {},
             ),
-
-          // Desktop CTA
           if (isDesktop)
             _PrimaryButton(
-              text: 'My Dashboard',
-              onPressed: () => _goToDashboard(context),
+              text: 'Get Started',
+              onPressed: () => _goToLogin(context),
             ),
         ],
       ),
     );
   }
-
-  void _showMobileMenu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: _LandingColors.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 28),
-            _MobileMenuTile(
-              icon: Icons.login,
-              label: 'Login',
-              onTap: () {
-                Navigator.pop(context);
-                _goToLogin(context);
-              },
-            ),
-            const SizedBox(height: 12),
-            _MobileMenuTile(
-              icon: Icons.person_add_outlined,
-              label: 'Create Account',
-              onTap: () {
-                Navigator.pop(context);
-                _goToSignup(context);
-              },
-            ),
-            const SizedBox(height: 12),
-            _MobileMenuTile(
-              icon: Icons.dashboard_outlined,
-              label: 'My Dashboard',
-              onTap: () {
-                Navigator.pop(context);
-                _goToDashboard(context);
-              },
-            ),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MobileMenuTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _MobileMenuTile({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) => ListTile(
-    onTap: onTap,
-    leading: Icon(icon, color: _LandingColors.primaryEmerald),
-    title: Text(
-      label,
-      style: _LandingTypography.labelLarge.copyWith(fontSize: 16),
-    ),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    tileColor: _LandingColors.background,
-  );
 }
 
 class _NavTextButton extends StatelessWidget {
   final String text;
-  final VoidCallback? onTap;
+  final VoidCallback? onPressed;
 
-  const _NavTextButton({required this.text, this.onTap});
+  const _NavTextButton({required this.text, this.onPressed});
 
   @override
   Widget build(BuildContext context) {
     return TextButton(
-      onPressed: onTap ?? () {},
+      onPressed: onPressed ?? () {},
       style: TextButton.styleFrom(
         foregroundColor: _LandingColors.primaryText,
         textStyle: _LandingTypography.labelLarge,
@@ -357,11 +243,7 @@ class _PrimaryButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool isDark;
 
-  const _PrimaryButton({
-    required this.text,
-    this.onPressed,
-    this.isDark = true,
-  });
+  const _PrimaryButton({required this.text, this.onPressed, this.isDark = true});
 
   @override
   Widget build(BuildContext context) {
@@ -373,18 +255,14 @@ class _PrimaryButton extends StatelessWidget {
               color: _LandingColors.primaryEmerald.withOpacity(0.3),
               blurRadius: 20,
               offset: const Offset(0, 8),
-            ),
+            )
         ],
       ),
       child: ElevatedButton(
         onPressed: onPressed ?? () {},
         style: ElevatedButton.styleFrom(
-          backgroundColor: isDark
-              ? _LandingColors.primaryEmerald
-              : Colors.white,
-          foregroundColor: isDark
-              ? Colors.white
-              : _LandingColors.primaryEmerald,
+          backgroundColor: isDark ? _LandingColors.primaryEmerald : Colors.white,
+          foregroundColor: isDark ? Colors.white : _LandingColors.primaryEmerald,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
           shape: RoundedRectangleBorder(
@@ -398,10 +276,6 @@ class _PrimaryButton extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-//  HERO SECTION
-// ─────────────────────────────────────────────
-
 class _HeroSection extends StatelessWidget {
   const _HeroSection();
 
@@ -410,7 +284,7 @@ class _HeroSection extends StatelessWidget {
     final width = MediaQuery.of(context).size.width;
     final height = MediaQuery.of(context).size.height;
     final isDesktop = width > 1000;
-
+    
     final textContent = ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 600),
       child: Column(
@@ -420,29 +294,23 @@ class _HeroSection extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              border: Border.all(
-                color: _LandingColors.primaryEmerald.withOpacity(0.2),
-              ),
+              border: Border.all(color: _LandingColors.primaryEmerald.withOpacity(0.2)),
               borderRadius: BorderRadius.circular(32),
               color: Colors.white.withOpacity(0.5),
             ),
             child: Text(
               'Introducing AI Styling',
-              style: _LandingTypography.labelLarge.copyWith(
-                color: _LandingColors.primaryEmerald,
-              ),
+              style: _LandingTypography.labelLarge.copyWith(color: _LandingColors.primaryEmerald),
             ),
           ),
           const SizedBox(height: 32),
           Text(
             'Your Curated Collection,\nPerfectly Matched.',
-            style: isDesktop
-                ? _LandingTypography.displayMassive
-                : _LandingTypography.displayMedium,
+            style: isDesktop ? _LandingTypography.displayMassive : _LandingTypography.displayMedium,
           ),
           const SizedBox(height: 32),
           Text(
-            'The ultimate digital vault for your wardrobe and jewelry. AI-powered styling that understands your unique aesthetic and unlocks endless combinations.',
+            'The ultimate digital vault for your wardrobe and Jewellryry. AI-powered styling that understands your unique aesthetic and unlocks endless combinations.',
             style: _LandingTypography.bodyLarge,
           ),
           const SizedBox(height: 56),
@@ -450,25 +318,16 @@ class _HeroSection extends StatelessWidget {
             spacing: 24,
             runSpacing: 24,
             children: [
-              // "Begin Your Collection" → signup
-              Builder(
-                builder: (ctx) => _PrimaryButton(
-                  text: 'Begin Your Collection',
-                  onPressed: () => _goToSignup(ctx),
-                ),
+              _PrimaryButton(
+                text: 'Begin Your Collection',
+                onPressed: () => _goToLogin(context),
               ),
               OutlinedButton(
                 onPressed: () {},
                 style: OutlinedButton.styleFrom(
                   foregroundColor: _LandingColors.primaryText,
-                  side: const BorderSide(
-                    color: _LandingColors.border,
-                    width: 1,
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 24,
-                  ),
+                  side: const BorderSide(color: _LandingColors.border, width: 1),
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -488,7 +347,7 @@ class _HeroSection extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Main dress card
+          // Base Dress Card
           Positioned(
             right: isDesktop ? 60 : 20,
             bottom: isDesktop ? 80 : 40,
@@ -517,11 +376,7 @@ class _HeroSection extends StatelessWidget {
                         borderRadius: BorderRadius.circular(24),
                       ),
                       child: const Center(
-                        child: Icon(
-                          Icons.checkroom_outlined,
-                          size: 64,
-                          color: _LandingColors.border,
-                        ),
+                        child: Icon(Icons.checkroom_outlined, size: 64, color: _LandingColors.border),
                       ),
                     ),
                   ),
@@ -530,24 +385,18 @@ class _HeroSection extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Silk Slip Dress',
-                          style: _LandingTypography.headingMedium,
-                        ),
+                        Text('Silk Slip Dress', style: _LandingTypography.headingMedium),
                         const SizedBox(height: 4),
-                        Text(
-                          'Evening Wear',
-                          style: _LandingTypography.bodyMedium,
-                        ),
+                        Text('Evening Wear', style: _LandingTypography.bodyMedium),
                       ],
                     ),
-                  ),
+                  )
                 ],
               ),
             ),
           ),
-
-          // Floating jewelry card
+          
+          // Floating Jewellryry Card
           Positioned(
             left: isDesktop ? 0 : 10,
             top: isDesktop ? 60 : 20,
@@ -581,11 +430,7 @@ class _HeroSection extends StatelessWidget {
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: const Center(
-                            child: Icon(
-                              Icons.diamond_outlined,
-                              size: 48,
-                              color: _LandingColors.primaryEmerald,
-                            ),
+                            child: Icon(Icons.diamond_outlined, size: 48, color: _LandingColors.primaryEmerald),
                           ),
                         ),
                       ),
@@ -594,22 +439,11 @@ class _HeroSection extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Emerald Pendant',
-                              style: _LandingTypography.bodyLarge.copyWith(
-                                color: _LandingColors.primaryText,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            Text(
-                              'Perfect Match',
-                              style: _LandingTypography.bodyMedium.copyWith(
-                                color: _LandingColors.primaryEmerald,
-                              ),
-                            ),
+                            Text('Emerald Pendant', style: _LandingTypography.bodyLarge.copyWith(color: _LandingColors.primaryText, fontWeight: FontWeight.w500)),
+                            Text('Perfect Match', style: _LandingTypography.bodyMedium.copyWith(color: _LandingColors.primaryEmerald)),
                           ],
                         ),
-                      ),
+                      )
                     ],
                   ),
                 ),
@@ -617,7 +451,7 @@ class _HeroSection extends StatelessWidget {
             ),
           ),
 
-          // Match score badge
+          // AI Match Score Badge
           Positioned(
             right: isDesktop ? 20 : 0,
             top: isDesktop ? 160 : 100,
@@ -639,12 +473,7 @@ class _HeroSection extends StatelessWidget {
                 children: [
                   const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
                   const SizedBox(width: 8),
-                  Text(
-                    '98% Match',
-                    style: _LandingTypography.labelLarge.copyWith(
-                      color: Colors.white,
-                    ),
-                  ),
+                  Text('98% Match', style: _LandingTypography.labelLarge.copyWith(color: Colors.white)),
                 ],
               ),
             ),
@@ -654,7 +483,9 @@ class _HeroSection extends StatelessWidget {
     );
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: isDesktop ? 80 : 24),
+      padding: EdgeInsets.symmetric(
+        horizontal: isDesktop ? 80 : 24,
+      ),
       constraints: BoxConstraints(minHeight: isDesktop ? height * 0.85 : 800),
       child: isDesktop
           ? Row(
@@ -678,10 +509,6 @@ class _HeroSection extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-//  FEATURES SECTION  (unchanged logic)
-// ─────────────────────────────────────────────
-
 class _FeaturesSection extends StatelessWidget {
   const _FeaturesSection();
 
@@ -702,14 +529,12 @@ class _FeaturesSection extends StatelessWidget {
               children: [
                 Text(
                   'The Art of Curation',
-                  style: isDesktop
-                      ? _LandingTypography.displayLarge
-                      : _LandingTypography.displayMedium,
+                  style: isDesktop ? _LandingTypography.displayLarge : _LandingTypography.displayMedium,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Discover how JewelVault transforms your closet into a boutique experience with intelligent tools designed for the modern collector.',
+                  'Discover how JewellryVault transforms your closet into a boutique experience with intelligent tools designed for the modern collector.',
                   style: _LandingTypography.bodyLarge,
                   textAlign: TextAlign.center,
                 ),
@@ -718,60 +543,54 @@ class _FeaturesSection extends StatelessWidget {
           ),
           const SizedBox(height: 80),
           if (isDesktop)
-            const Row(
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
+                const Expanded(
                   child: _FeatureCard(
                     icon: Icons.inventory_2_outlined,
                     title: 'Digital Vault',
-                    description:
-                        'Digitize your entire collection with high-fidelity cataloging. Keep immaculate records of every piece you own.',
+                    description: 'Digitize your entire collection with high-fidelity cataloging. Keep immaculate records of every piece you own.',
                   ),
                 ),
-                SizedBox(width: 40),
-                Expanded(
+                const SizedBox(width: 40),
+                const Expanded(
                   child: _FeatureCard(
                     icon: Icons.auto_awesome_outlined,
                     title: 'AI Match Engine',
-                    description:
-                        'Our proprietary intelligence pairs your jewelry with your garments, unlocking unseen aesthetic combinations.',
+                    description: 'Our proprietary intelligence pairs your Jewellryry with your garments, unlocking unseen aesthetic combinations.',
                   ),
                 ),
-                SizedBox(width: 40),
-                Expanded(
+                const SizedBox(width: 40),
+                const Expanded(
                   child: _FeatureCard(
                     icon: Icons.view_carousel_outlined,
                     title: 'Lookbook Canvas',
-                    description:
-                        'Plan your outfits visually. Drag, drop, and design your daily looks on an elegant, infinite digital canvas.',
+                    description: 'Plan your outfits visually. Drag, drop, and design your daily looks on an elegant, infinite digital canvas.',
                   ),
                 ),
               ],
             )
           else
-            const Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _FeatureCard(
+                const _FeatureCard(
                   icon: Icons.inventory_2_outlined,
                   title: 'Digital Vault',
-                  description:
-                      'Digitize your entire collection with high-fidelity cataloging. Keep immaculate records of every piece you own.',
+                  description: 'Digitize your entire collection with high-fidelity cataloging. Keep immaculate records of every piece you own.',
                 ),
-                SizedBox(height: 32),
-                _FeatureCard(
+                const SizedBox(height: 32),
+                const _FeatureCard(
                   icon: Icons.auto_awesome_outlined,
                   title: 'AI Match Engine',
-                  description:
-                      'Our proprietary intelligence pairs your jewelry with your garments, unlocking unseen aesthetic combinations.',
+                  description: 'Our proprietary intelligence pairs your Jewellryry with your garments, unlocking unseen aesthetic combinations.',
                 ),
-                SizedBox(height: 32),
-                _FeatureCard(
+                const SizedBox(height: 32),
+                const _FeatureCard(
                   icon: Icons.view_carousel_outlined,
                   title: 'Lookbook Canvas',
-                  description:
-                      'Plan your outfits visually. Drag, drop, and design your daily looks on an elegant, infinite digital canvas.',
+                  description: 'Plan your outfits visually. Drag, drop, and design your daily looks on an elegant, infinite digital canvas.',
                 ),
               ],
             ),
@@ -813,18 +632,16 @@ class _FeatureCardState extends State<_FeatureCard> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(32),
           border: Border.all(
-            color: _isHovered
-                ? _LandingColors.primaryEmerald.withOpacity(0.2)
-                : Colors.white,
+            color: _isHovered ? _LandingColors.primaryEmerald.withOpacity(0.2) : Colors.white,
           ),
           boxShadow: [
             BoxShadow(
-              color: _isHovered
+              color: _isHovered 
                   ? _LandingColors.primaryEmerald.withOpacity(0.08)
                   : Colors.black.withOpacity(0.03),
               blurRadius: _isHovered ? 40 : 20,
               offset: Offset(0, _isHovered ? 20 : 10),
-            ),
+            )
           ],
         ),
         child: Column(
@@ -835,11 +652,8 @@ class _FeatureCardState extends State<_FeatureCard> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: _isHovered
-                      ? [
-                          _LandingColors.primaryEmerald,
-                          _LandingColors.darkEmerald,
-                        ]
+                  colors: _isHovered 
+                      ? [_LandingColors.primaryEmerald, _LandingColors.darkEmerald]
                       : [_LandingColors.background, _LandingColors.background],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -848,26 +662,26 @@ class _FeatureCardState extends State<_FeatureCard> {
               ),
               child: Icon(
                 widget.icon,
-                color: _isHovered
-                    ? Colors.white
-                    : _LandingColors.primaryEmerald,
+                color: _isHovered ? Colors.white : _LandingColors.primaryEmerald,
                 size: 40,
               ),
             ),
             const SizedBox(height: 40),
-            Text(widget.title, style: _LandingTypography.headingLarge),
+            Text(
+              widget.title,
+              style: _LandingTypography.headingLarge,
+            ),
             const SizedBox(height: 20),
-            Text(widget.description, style: _LandingTypography.bodyLarge),
+            Text(
+              widget.description,
+              style: _LandingTypography.bodyLarge,
+            ),
           ],
         ),
       ),
     );
   }
 }
-
-// ─────────────────────────────────────────────
-//  HOW IT WORKS  (unchanged)
-// ─────────────────────────────────────────────
 
 class _HowItWorksSection extends StatelessWidget {
   const _HowItWorksSection();
@@ -886,67 +700,59 @@ class _HowItWorksSection extends StatelessWidget {
         children: [
           Text(
             'The Process',
-            style: isDesktop
-                ? _LandingTypography.displayLarge
-                : _LandingTypography.displayMedium,
+            style: isDesktop ? _LandingTypography.displayLarge : _LandingTypography.displayMedium,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 100),
           if (isDesktop)
-            const Row(
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
+                const Expanded(
                   child: _TimelineStep(
                     step: '01',
                     title: 'Upload Collection',
-                    description:
-                        'Snap photos or sync from your favorite boutiques. We automatically isolate items for a clean catalog look.',
+                    description: 'Snap photos or sync from your favorite boutiques. We automatically isolate items for a clean catalog look.',
                   ),
                 ),
-                SizedBox(width: 80),
-                Expanded(
+                const SizedBox(width: 80),
+                const Expanded(
                   child: _TimelineStep(
                     step: '02',
                     title: 'AI Understands',
-                    description:
-                        'Our engine analyzes color palettes, textures, and silhouettes to build your personalized style profile.',
+                    description: 'Our engine analyzes color palettes, textures, and silhouettes to build your personalized style profile.',
                   ),
                 ),
-                SizedBox(width: 80),
-                Expanded(
+                const SizedBox(width: 80),
+                const Expanded(
                   child: _TimelineStep(
                     step: '03',
                     title: 'Perfect Matches',
-                    description:
-                        'Get daily curation. See which necklace perfectly complements your new dress before you even put it on.',
+                    description: 'Get daily curation. See which necklace perfectly complements your new dress before you even put it on.',
                   ),
                 ),
               ],
             )
           else
-            const Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _TimelineStep(
+                const _TimelineStep(
                   step: '01',
                   title: 'Upload Collection',
-                  description:
-                      'Snap photos or sync from your favorite boutiques. We automatically isolate items for a clean catalog look.',
+                  description: 'Snap photos or sync from your favorite boutiques. We automatically isolate items for a clean catalog look.',
                 ),
-                SizedBox(height: 48),
-                _TimelineStep(
+                const SizedBox(height: 48),
+                const _TimelineStep(
                   step: '02',
                   title: 'AI Understands',
-                  description:
-                      'Our engine analyzes color palettes, textures, and silhouettes to build your personalized style profile.',
+                  description: 'Our engine analyzes color palettes, textures, and silhouettes to build your personalized style profile.',
                 ),
-                SizedBox(height: 48),
-                _TimelineStep(
+                const SizedBox(height: 48),
+                const _TimelineStep(
                   step: '03',
                   title: 'Perfect Matches',
-                  description:
-                      'Get daily curation. See which necklace perfectly complements your new dress before you even put it on.',
+                  description: 'Get daily curation. See which necklace perfectly complements your new dress before you even put it on.',
                 ),
               ],
             ),
@@ -982,19 +788,25 @@ class _TimelineStep extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 32),
-        Container(height: 2, width: 80, color: _LandingColors.primaryEmerald),
+        Container(
+          height: 2,
+          width: 80,
+          color: _LandingColors.primaryEmerald,
+        ),
         const SizedBox(height: 32),
-        Text(title, style: _LandingTypography.headingLarge),
+        Text(
+          title,
+          style: _LandingTypography.headingLarge,
+        ),
         const SizedBox(height: 16),
-        Text(description, style: _LandingTypography.bodyLarge),
+        Text(
+          description,
+          style: _LandingTypography.bodyLarge,
+        ),
       ],
     );
   }
 }
-
-// ─────────────────────────────────────────────
-//  TESTIMONIALS  (unchanged)
-// ─────────────────────────────────────────────
 
 class _TestimonialSection extends StatelessWidget {
   const _TestimonialSection();
@@ -1013,19 +825,21 @@ class _TestimonialSection extends StatelessWidget {
         children: [
           Text(
             'Curated Feedback',
-            style: isDesktop
-                ? _LandingTypography.displayLarge.copyWith(color: Colors.white)
-                : _LandingTypography.displayMedium.copyWith(
-                    color: Colors.white,
-                  ),
+            style: isDesktop 
+                ? _LandingTypography.displayLarge.copyWith(color: Colors.white) 
+                : _LandingTypography.displayMedium.copyWith(color: Colors.white),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 80),
-          const Wrap(
+          Wrap(
             spacing: 32,
             runSpacing: 32,
             alignment: WrapAlignment.center,
-            children: [_MockReviewCard(), _MockReviewCard(), _MockReviewCard()],
+            children: const [
+              _MockReviewCard(),
+              _MockReviewCard(),
+              _MockReviewCard(),
+            ],
           ),
         ],
       ),
@@ -1058,27 +872,19 @@ class _MockReviewCard extends StatelessWidget {
         children: [
           Row(
             children: List.generate(
-              5,
-              (_) => const Icon(
-                Icons.star,
-                color: _LandingColors.border,
-                size: 16,
-              ),
+              5, 
+              (index) => const Icon(Icons.star, color: _LandingColors.border, size: 16)
             ),
           ),
           const SizedBox(height: 32),
           Text(
             '"Mock Review"',
-            style: _LandingTypography.headingMedium.copyWith(
-              color: Colors.white,
-            ),
+            style: _LandingTypography.headingMedium.copyWith(color: Colors.white),
           ),
           const SizedBox(height: 16),
           Text(
             'This is a placeholder for a future review from a client or critic.',
-            style: _LandingTypography.bodyMedium.copyWith(
-              color: Colors.white.withOpacity(0.6),
-            ),
+            style: _LandingTypography.bodyMedium.copyWith(color: Colors.white.withOpacity(0.6)),
           ),
           const SizedBox(height: 48),
           Row(
@@ -1096,21 +902,21 @@ class _MockReviewCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 100,
-                    height: 12,
+                    width: 100, 
+                    height: 12, 
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(4),
-                    ),
+                    )
                   ),
                   const SizedBox(height: 8),
                   Container(
-                    width: 60,
-                    height: 10,
+                    width: 60, 
+                    height: 10, 
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
-                    ),
+                    )
                   ),
                 ],
               ),
@@ -1121,10 +927,6 @@ class _MockReviewCard extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────
-//  FINAL CTA  — "Create Your Vault Today" → signup
-// ─────────────────────────────────────────────
 
 class _FinalCTASection extends StatelessWidget {
   const _FinalCTASection();
@@ -1150,18 +952,13 @@ class _FinalCTASection extends StatelessWidget {
           children: [
             Text(
               'Ready to elevate your collection?',
-              style: isDesktop
-                  ? _LandingTypography.displayLarge
-                  : _LandingTypography.displayMedium,
+              style: isDesktop ? _LandingTypography.displayLarge : _LandingTypography.displayMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 48),
-            // Navigates to signup
-            Builder(
-              builder: (ctx) => _PrimaryButton(
-                text: 'Create Your Vault Today',
-                onPressed: () => _goToSignup(ctx),
-              ),
+            _PrimaryButton(
+              text: 'Create Your Vault Today',
+              onPressed: () => _goToLogin(context),
             ),
           ],
         ),
@@ -1170,17 +967,13 @@ class _FinalCTASection extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-//  FOOTER  (unchanged)
-// ─────────────────────────────────────────────
-
 class _FooterSection extends StatelessWidget {
   const _FooterSection();
 
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 800;
-
+    
     return Container(
       color: _LandingColors.whiteCard,
       padding: EdgeInsets.symmetric(
@@ -1197,37 +990,32 @@ class _FooterSection extends StatelessWidget {
           Flex(
             direction: isDesktop ? Axis.horizontal : Axis.vertical,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: isDesktop
-                ? CrossAxisAlignment.center
-                : CrossAxisAlignment.start,
+            crossAxisAlignment: isDesktop ? CrossAxisAlignment.center : CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Icon(
-                    Icons.diamond_outlined,
-                    color: _LandingColors.primaryEmerald,
-                    size: 24,
-                  ),
+                  const Icon(Icons.diamond_outlined, color: _LandingColors.primaryEmerald, size: 24),
                   const SizedBox(width: 12),
-                  Text('JewelVault', style: _LandingTypography.headingMedium),
+                  Text(
+                    'JewellryVault',
+                    style: _LandingTypography.headingMedium,
+                  ),
                 ],
               ),
               if (!isDesktop) const SizedBox(height: 48),
               Row(
-                mainAxisAlignment: isDesktop
-                    ? MainAxisAlignment.end
-                    : MainAxisAlignment.start,
-                children: const [
+                mainAxisAlignment: isDesktop ? MainAxisAlignment.end : MainAxisAlignment.start,
+                children: [
                   _FooterLink(text: 'The Closet'),
-                  SizedBox(width: 40),
+                  const SizedBox(width: 40),
                   _FooterLink(text: 'AI Matching'),
-                  SizedBox(width: 40),
+                  const SizedBox(width: 40),
                   _FooterLink(text: 'Privacy'),
                 ],
               ),
               if (!isDesktop) const SizedBox(height: 48),
               Text(
-                '© ${DateTime.now().year} JewelVault. All rights reserved.',
+                '© ${DateTime.now().year} JewellryVault. All rights reserved.',
                 style: _LandingTypography.bodyMedium,
               ),
             ],
@@ -1240,17 +1028,20 @@ class _FooterSection extends StatelessWidget {
 
 class _FooterLink extends StatelessWidget {
   final String text;
+
   const _FooterLink({required this.text});
 
   @override
-  Widget build(BuildContext context) => InkWell(
-    onTap: () {},
-    child: Text(
-      text,
-      style: _LandingTypography.bodyMedium.copyWith(
-        color: _LandingColors.primaryText,
-        fontWeight: FontWeight.w500,
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () {},
+      child: Text(
+        text,
+        style: _LandingTypography.bodyMedium.copyWith(
+          color: _LandingColors.primaryText,
+          fontWeight: FontWeight.w500,
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

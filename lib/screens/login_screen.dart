@@ -33,11 +33,8 @@ class _LoginScreenState extends State<LoginScreen> {
           password: passwordController.text.trim(),
         );
 
-        // Go to landing page after successful login
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const LandingPage()),
-        );
+        // Go to dashboard after successful login
+        Navigator.pushReplacementNamed(context, '/dashboard');
       } catch (e) {
         // Show error if login fails
         ScaffoldMessenger.of(
