@@ -211,7 +211,7 @@ class _NavBar extends StatelessWidget {
           if (isDesktop)
             _PrimaryButton(
               text: 'Get Started',
-              onPressed: () => _goToSignup(context),
+              onPressed: () => _goToLogin(context),
             ),
         ],
       ),
@@ -320,7 +320,7 @@ class _HeroSection extends StatelessWidget {
             children: [
               _PrimaryButton(
                 text: 'Begin Your Collection',
-                onPressed: () => _goToSignup(context),
+                onPressed: () => _goToLogin(context),
               ),
               OutlinedButton(
                 onPressed: () {},
@@ -958,7 +958,7 @@ class _FinalCTASection extends StatelessWidget {
             const SizedBox(height: 48),
             _PrimaryButton(
               text: 'Create Your Vault Today',
-              onPressed: () => _goToSignup(context),
+              onPressed: () => _goToLogin(context),
             ),
           ],
         ),
