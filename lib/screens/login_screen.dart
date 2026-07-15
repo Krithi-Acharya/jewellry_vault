@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service.dart';
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
 import '../landing_page.dart';
@@ -21,25 +22,60 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Controls show/hide password
   bool showPassword = false;
+  
+  // Controls loading state
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
 
   // Runs when user taps Login
   void login() async {
     // Check if all fields are valid
-    if (formKey.currentState!.validate()) {
-      try {
-        // Login with Firebase
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: emailController.text.trim(),
-          password: passwordController.text.trim(),
-        );
+    if (!formKey.currentState!.validate()) return;
+    
+    setState(() => _isLoading = true);
 
-        // Go to dashboard after successful login
-        Navigator.pushReplacementNamed(context, '/dashboard');
-      } catch (e) {
-        // Show error if login fails
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+    try {
+      // Login with AuthService
+      await AuthService.instance.signIn(
+        emailController.text.trim(),
+        passwordController.text.trim(),
+      );
+
+      if (!context.mounted) return;
+      // Close the login screen and let AuthGate reveal the Dashboard
+      Navigator.pop(context);
+    } on FirebaseAuthException catch (e) {
+      if (!context.mounted) return;
+      
+      String message = 'Authentication failed.';
+      switch (e.code) {
+        case 'invalid-credential':
+        case 'user-not-found':
+        case 'wrong-password':
+          message = 'Invalid email or password.';
+          break;
+        case 'too-many-requests':
+          message = 'Too many attempts. Please try again later.';
+          break;
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('An unexpected error occurred.')),
+      );
+    } finally {
+      if (context.mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -141,13 +177,22 @@ class _LoginScreenState extends State<LoginScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: login,
+                  onPressed: _isLoading ? null : login,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1B4332), // dark green
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: const Text('Login'),
+                  child: _isLoading 
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Login'),
                 ),
               ),
               const SizedBox(height: 16),

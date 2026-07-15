@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -19,25 +20,62 @@ class _SignupScreenState extends State<SignupScreen> {
 
   // Controls show/hide password
   bool showPassword = false;
+  
+  // Controls loading state
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
 
   // Runs when user taps Sign Up
   void signup() async {
     // Check if all fields are valid
-    if (formKey.currentState!.validate()) {
-      try {
-        // Create new account with Firebase
-        await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: emailController.text.trim(),
-          password: passwordController.text.trim(),
-        );
+    if (!formKey.currentState!.validate()) return;
+    
+    setState(() => _isLoading = true);
 
-        // Go back to login page after signup
-        Navigator.pop(context);
-      } catch (e) {
-        // Show error if signup fails
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+    try {
+      // Create new account with AuthService
+      await AuthService.instance.signUp(
+        emailController.text.trim(),
+        passwordController.text.trim(),
+      );
+
+      if (!context.mounted) return;
+      // Close signup screen
+      Navigator.pop(context);
+    } on FirebaseAuthException catch (e) {
+      if (!context.mounted) return;
+      
+      String message = 'Failed to create account.';
+      switch (e.code) {
+        case 'email-already-in-use':
+          message = 'An account already exists for that email.';
+          break;
+        case 'invalid-email':
+          message = 'The email address is invalid.';
+          break;
+        case 'weak-password':
+          message = 'The password provided is too weak.';
+          break;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('An unexpected error occurred.')),
+      );
+    } finally {
+      if (context.mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -120,8 +158,11 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                 ),
                 validator: (value) {
-                  if (value!.isEmpty) return 'Please enter your password';
-                  if (value.length < 6) return 'Minimum 6 characters';
+                  if (value == null || value.isEmpty) return 'Please enter your password';
+                  if (value.length < 8) return 'Minimum 8 characters';
+                  if (!value.contains(RegExp(r'[A-Z]'))) return 'Must contain at least one uppercase letter';
+                  if (!value.contains(RegExp(r'[a-z]'))) return 'Must contain at least one lowercase letter';
+                  if (!value.contains(RegExp(r'[0-9]'))) return 'Must contain at least one number';
                   return null;
                 },
               ),
@@ -131,13 +172,22 @@ class _SignupScreenState extends State<SignupScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: signup,
+                  onPressed: _isLoading ? null : signup,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1B4332),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: const Text('Sign Up'),
+                  child: _isLoading 
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Sign Up'),
                 ),
               ),
               const SizedBox(height: 16),

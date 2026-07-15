@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service.dart';
 
 // ─────────────────────────────────────────────
 //  DESIGN SYSTEM
@@ -618,11 +619,15 @@ class _SidebarContent extends StatelessWidget {
                     size: 18,
                   ),
                   onPressed: () async {
-                    await FirebaseAuth.instance.signOut();
-                    if (context.mounted) {
-                      Navigator.of(
-                        context,
-                      ).pushNamedAndRemoveUntil('/login', (route) => false);
+                    try {
+                      await AuthService.instance.signOut();
+                      // No need to manually navigate. 
+                      // AuthGate will detect the state change and show the LandingPage.
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Failed to sign out. Please try again.')),
+                      );
                     }
                   },
                 ),
