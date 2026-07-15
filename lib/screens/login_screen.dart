@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service.dart';
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
 import 'dashboard_screen.dart';
@@ -21,12 +22,63 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Controls show/hide password
   bool showPassword = false;
+  
+  // Controls loading state
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
 
   // Shows a loading spinner while Firebase is working
   bool isLoading = false;
 
   // Runs when user taps Login
   void login() async {
+    // Check if all fields are valid
+    if (!formKey.currentState!.validate()) return;
+    
+    setState(() => _isLoading = true);
+
+    try {
+      // Login with AuthService
+      await AuthService.instance.signIn(
+        emailController.text.trim(),
+        passwordController.text.trim(),
+      );
+
+      if (!context.mounted) return;
+      // Close the login screen and let AuthGate reveal the Dashboard
+      Navigator.pop(context);
+    } on FirebaseAuthException catch (e) {
+      if (!context.mounted) return;
+      
+      String message = 'Authentication failed.';
+      switch (e.code) {
+        case 'invalid-credential':
+        case 'user-not-found':
+        case 'wrong-password':
+          message = 'Invalid email or password.';
+          break;
+        case 'too-many-requests':
+          message = 'Too many attempts. Please try again later.';
+          break;
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('An unexpected error occurred.')),
+      );
+    } finally {
+      if (context.mounted) {
+        setState(() => _isLoading = false);
     // Check if all fields are valid first
     if (formKey.currentState!.validate()) {
       setState(() => isLoading = true);
@@ -113,6 +165,44 @@ class _LoginScreenState extends State<LoginScreen> {
                       return null;
                     },
                   ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Login button (full width)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : login,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1B4332), // dark green
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: _isLoading 
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Login'),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Sign up link at bottom
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text("Don't have an account?"),
+                  TextButton(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SignupScreen(),
                   const SizedBox(height: 16),
 
                   // Password field with show/hide eye icon
