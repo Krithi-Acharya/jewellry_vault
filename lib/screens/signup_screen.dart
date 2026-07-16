@@ -17,6 +17,8 @@ class _SignupScreenState extends State<SignupScreen> {
   final passwordController = TextEditingController();
 
   bool showPassword = false;
+
+  // Controls loading state
   bool _isLoading = false;
 
   @override
@@ -56,9 +58,9 @@ class _SignupScreenState extends State<SignupScreen> {
           break;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -142,12 +144,15 @@ class _SignupScreenState extends State<SignupScreen> {
                       prefixIcon: const Icon(Icons.lock),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          showPassword ? Icons.visibility : Icons.visibility_off,
+                          showPassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
                         ),
                         onPressed: () =>
                             setState(() => showPassword = !showPassword),
                       ),
                     ),
+                    // Stronger rule set from the newer version: length + mixed case + digit
                     validator: (value) {
                       if (value == null || value.isEmpty) return 'Please enter your password';
                       if (value.length < 8) return 'Minimum 8 characters';

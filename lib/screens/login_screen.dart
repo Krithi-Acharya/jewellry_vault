@@ -17,6 +17,11 @@ class _LoginScreenState extends State<LoginScreen> {
   final passwordController = TextEditingController();
 
   bool showPassword = false;
+<<<<<<< HEAD
+=======
+
+  // Controls loading state
+>>>>>>> 3df0e715f29cf1ed06e7d56c88d0cf05d3e543cb
   bool _isLoading = false;
 
   @override
@@ -26,6 +31,10 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+<<<<<<< HEAD
+=======
+  // Runs when user taps Login
+>>>>>>> 3df0e715f29cf1ed06e7d56c88d0cf05d3e543cb
   void login() async {
     if (!formKey.currentState!.validate()) return;
 
@@ -58,9 +67,15 @@ class _LoginScreenState extends State<LoginScreen> {
           break;
       }
 
+<<<<<<< HEAD
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message)),
       );
+=======
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+>>>>>>> 3df0e715f29cf1ed06e7d56c88d0cf05d3e543cb
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -92,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
-          child: Container(
+          child: SizedBox(
             width: formWidth,
             child: Form(
               key: formKey,
@@ -118,7 +133,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       prefixIcon: Icon(Icons.email),
                     ),
                     validator: (value) {
-                      if (value!.isEmpty) return 'Please enter your email';
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your email';
+                      }
                       if (!value.contains('@')) return 'Enter a valid email';
                       return null;
                     },
@@ -133,14 +150,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       prefixIcon: const Icon(Icons.lock),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          showPassword ? Icons.visibility : Icons.visibility_off,
+                          showPassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
                         ),
                         onPressed: () =>
                             setState(() => showPassword = !showPassword),
                       ),
                     ),
                     validator: (value) {
-                      if (value!.isEmpty) return 'Please enter your password';
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your password';
+                      }
                       return null;
                     },
                   ),
@@ -185,19 +206,22 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
+<<<<<<< HEAD
+=======
+
+                  // Sign up link at bottom
+>>>>>>> 3df0e715f29cf1ed06e7d56c88d0cf05d3e543cb
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Text("Don't have an account?"),
                       TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SignupScreen(),
-                            ),
-                          );
-                        },
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SignupScreen(),
+                          ),
+                        ),
                         child: const Text(
                           'Sign Up',
                           style: TextStyle(color: Color(0xFF1B4332)),

@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../api_service.dart';
 import '../services/auth_service.dart';
 
 // ─────────────────────────────────────────────
@@ -120,6 +121,56 @@ class ClosetItem {
     isFavorite: isFavorite ?? this.isFavorite,
     icon: icon,
   );
+
+  /// Builds a ClosetItem from the JSON shape returned by the backend API.
+  factory ClosetItem.fromJson(Map<String, dynamic> json) => ClosetItem(
+    id: json['id'].toString(),
+    title: json['title'] ?? '',
+    category: json['category'] ?? 'Garment',
+    brand: json['brand'] ?? 'Unknown',
+    color: json['color'] ?? '—',
+    season: json['season'] ?? 'All',
+    wornCount: json['wornCount'] ?? 0,
+    matchScore: (json['matchScore'] as num?)?.toDouble() ?? 80,
+    isFavorite: json['isFavorite'] ?? false,
+    icon: _iconFromKey(json['icon'] ?? 'checkroom_outlined'),
+  );
+
+  /// The subset of fields the backend needs to catalog a new item.
+  Map<String, dynamic> toCreateJson() => {
+    'title': title,
+    'category': category,
+    'brand': brand,
+    'color': color,
+    'season': season,
+    'icon': _iconToKey(icon),
+    'matchScore': matchScore,
+  };
+}
+
+// Icons aren't JSON-serializable, so we map them to/from simple string keys
+// that mirror the icon names used when creating items in _AddItemView.
+IconData _iconFromKey(String key) {
+  switch (key) {
+    case 'diamond_outlined':
+      return Icons.diamond_outlined;
+    case 'shopping_bag_outlined':
+      return Icons.shopping_bag_outlined;
+    case 'face_retouching_natural_outlined':
+      return Icons.face_retouching_natural_outlined;
+    case 'checkroom_outlined':
+    default:
+      return Icons.checkroom_outlined;
+  }
+}
+
+String _iconToKey(IconData icon) {
+  if (icon == Icons.diamond_outlined) return 'diamond_outlined';
+  if (icon == Icons.shopping_bag_outlined) return 'shopping_bag_outlined';
+  if (icon == Icons.face_retouching_natural_outlined) {
+    return 'face_retouching_natural_outlined';
+  }
+  return 'checkroom_outlined';
 }
 
 // ─────────────────────────────────────────────
@@ -333,12 +384,37 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
-  late List<ClosetItem> _closetItems;
+  List<ClosetItem> _closetItems = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _closetItems = List.from(_seedItems);
+    _loadClosetItems();
+  }
+
+  Future<void> _loadClosetItems() async {
+    try {
+      final data = await ApiService.fetchClosetItems();
+      setState(() {
+        _closetItems = data.map(ClosetItem.fromJson).toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      // Backend not reachable yet (e.g. server not running) — fall back to
+      // sample data so the UI is still usable during development.
+      setState(() {
+        _closetItems = List.from(_seedItems);
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not reach the server — showing sample data.'),
+          ),
+        );
+      }
+    }
   }
 
   final List<Map<String, dynamic>> _navItems = [
@@ -364,27 +440,63 @@ class _DashboardScreenState extends State<DashboardScreen> {
     },
   ];
 
-  void _addItem(ClosetItem item) {
-    setState(() {
-      _closetItems.add(item);
-      _selectedIndex = 1;
-    });
-  }
-
-  void _toggleFavorite(String id) {
-    setState(() {
-      final idx = _closetItems.indexWhere((e) => e.id == id);
-      if (idx != -1) {
-        _closetItems[idx] = _closetItems[idx].copyWith(
-          isFavorite: !_closetItems[idx].isFavorite,
+  Future<void> _addItem(ClosetItem item) async {
+    try {
+      final saved = await ApiService.addClosetItem(item.toCreateJson());
+      setState(() {
+        _closetItems.add(ClosetItem.fromJson(saved));
+        _selectedIndex = 1;
+      });
+    } catch (e) {
+      // Server unreachable — keep the item locally so the user's work isn't lost.
+      setState(() {
+        _closetItems.add(item);
+        _selectedIndex = 1;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Saved locally — could not reach the server.'),
+          ),
         );
       }
+    }
+  }
+
+  Future<void> _toggleFavorite(String id) async {
+    final idx = _closetItems.indexWhere((e) => e.id == id);
+    if (idx == -1) return;
+    final newValue = !_closetItems[idx].isFavorite;
+
+    // Optimistic update so the UI feels instant.
+    setState(() {
+      _closetItems[idx] = _closetItems[idx].copyWith(isFavorite: newValue);
     });
+
+    try {
+      await ApiService.updateClosetItem(id, {'isFavorite': newValue});
+    } catch (e) {
+      // Roll back if the server didn't accept the change.
+      setState(() {
+        _closetItems[idx] = _closetItems[idx].copyWith(isFavorite: !newValue);
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final bool isDesktop = MediaQuery.of(context).size.width > 900;
+
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: JewelVaultColors.background,
+        body: Center(
+          child: CircularProgressIndicator(
+            color: JewelVaultColors.primaryEmerald,
+          ),
+        ),
+      );
+    }
 
     final List<Widget> views = [
       _DashboardView(
@@ -621,12 +733,16 @@ class _SidebarContent extends StatelessWidget {
                   onPressed: () async {
                     try {
                       await AuthService.instance.signOut();
-                      // No need to manually navigate. 
+                      // No need to manually navigate.
                       // AuthGate will detect the state change and show the LandingPage.
                     } catch (e) {
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Failed to sign out. Please try again.')),
+                        const SnackBar(
+                          content: Text(
+                            'Failed to sign out. Please try again.',
+                          ),
+                        ),
                       );
                     }
                   },
