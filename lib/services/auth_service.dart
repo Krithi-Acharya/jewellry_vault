@@ -1,19 +1,25 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthService {
-  // Singleton instance
   static final AuthService instance = AuthService._internal();
-
   AuthService._internal();
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  // Stores the current session's JWT token in memory
+  String? _sessionToken;
+
   // Sign in
   Future<UserCredential> signIn(String email, String password) async {
-    return await _auth.signInWithEmailAndPassword(
+    final credential = await _auth.signInWithEmailAndPassword(
       email: email,
       password: password,
     );
+
+    // Store the JWT in this session right after successful login
+    _sessionToken = await credential.user?.getIdToken();
+
+    return credential;
   }
 
   // Sign up
@@ -27,6 +33,7 @@ class AuthService {
   // Sign out
   Future<void> signOut() async {
     await _auth.signOut();
+    _sessionToken = null;
   }
 
   // Send password reset
@@ -38,9 +45,11 @@ class AuthService {
   Future<String?> getIdToken() async {
     final user = _auth.currentUser;
     if (user != null) {
-      // Pass forceRefresh: false to use cached token if still valid
       return await user.getIdToken();
     }
     return null;
   }
+
+  // Reads the token stored in this session (fast, no async needed)
+  String? get currentSessionToken => _sessionToken;
 }
