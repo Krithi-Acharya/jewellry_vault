@@ -1,25 +1,291 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
-model User {
-  id              Int      @id @default(autoincrement()) @map("usr_id")
-  firebaseUid     String?  @unique @map("usr_firebase_uid")
-  email           String   @unique @map("usr_email")
-  phoneNumber     String?  @unique @map("usr_phone_number")
-  password        String?  @map("usr_password")
-  gender          String?  @map("usr_gender")
-  
-  @@map("USERS")
+model audit_logs {
+  adl_id           Int       @id @default(autoincrement())
+  adl_actor_usr_id Int
+  adl_action       String    @db.VarChar(255)
+  adl_timestamp    DateTime? @default(now()) @db.Timestamp(6)
+  users            users     @relation(fields: [adl_actor_usr_id], references: [usr_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model closet_item_ai_tags {
+  ciaitag_id          Int          @id @default(autoincrement())
+  ciaitag_ci_id       Int          @unique
+  ciaitag_reviewed_by Int?
+  ciaitag_tags        Json?
+  closet_items        closet_items @relation(fields: [ciaitag_ci_id], references: [ci_id], onDelete: Cascade, onUpdate: NoAction)
+  users               users?       @relation(fields: [ciaitag_reviewed_by], references: [usr_id], onUpdate: NoAction)
+}
+
+model closet_item_attributes {
+  ciattr_id               Int             @id @default(autoincrement())
+  ciattr_ci_id            Int             @unique
+  ciattr_neckline_type_id Int?
+  ciattr_fabric_type_id   Int?
+  ciattr_metal_type_id    Int?
+  ciattr_gemstone_type_id Int?
+  closet_items            closet_items    @relation(fields: [ciattr_ci_id], references: [ci_id], onDelete: Cascade, onUpdate: NoAction)
+  fabric_types            fabric_types?   @relation(fields: [ciattr_fabric_type_id], references: [fbt_id], onUpdate: NoAction)
+  gemstone_types          gemstone_types? @relation(fields: [ciattr_gemstone_type_id], references: [gst_id], onUpdate: NoAction)
+  metal_types             metal_types?    @relation(fields: [ciattr_metal_type_id], references: [mtt_id], onUpdate: NoAction)
+  neckline_types          neckline_types? @relation(fields: [ciattr_neckline_type_id], references: [nkt_id], onUpdate: NoAction)
+}
+
+model closet_item_images {
+  cii_id       Int          @id @default(autoincrement())
+  cii_ci_id    Int
+  cii_url      String
+  closet_items closet_items @relation(fields: [cii_ci_id], references: [ci_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model closet_items {
+  ci_id                              Int                                  @id @default(autoincrement())
+  ci_usr_id                          Int
+  ci_category_id                     Int
+  ci_status                          String?                              @default("ACTIVE") @db.VarChar(50)
+  closet_item_ai_tags                closet_item_ai_tags?
+  closet_item_attributes             closet_item_attributes?
+  closet_item_images                 closet_item_images[]
+  item_categories                    item_categories                      @relation(fields: [ci_category_id], references: [itc_id], onUpdate: NoAction)
+  users                              users                                @relation(fields: [ci_usr_id], references: [usr_id], onDelete: Cascade, onUpdate: NoAction)
+  collection_items                   collection_items[]
+  item_upload_jobs                   item_upload_jobs[]
+  lookbook_items                     lookbook_items[]
+  recommendation_apparel_suggestions recommendation_apparel_suggestions[]
+  recommendation_jewelry_suggestions recommendation_jewelry_suggestions[]
+  saved_outfit_items                 saved_outfit_items[]
+}
+
+model collection_items {
+  coli_id      Int          @id @default(autoincrement())
+  coli_col_id  Int
+  coli_ci_id   Int
+  closet_items closet_items @relation(fields: [coli_ci_id], references: [ci_id], onDelete: Cascade, onUpdate: NoAction)
+  collections  collections  @relation(fields: [coli_col_id], references: [col_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model collections {
+  col_id           Int                @id @default(autoincrement())
+  col_usr_id       Int
+  col_name         String?            @db.VarChar(255)
+  collection_items collection_items[]
+  users            users              @relation(fields: [col_usr_id], references: [usr_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model event_categories {
+  evc_id                      Int                           @id @default(autoincrement())
+  evc_name                    String                        @unique @db.VarChar(100)
+  outfit_wear_log             outfit_wear_log[]
+  recommendation_engine_rules recommendation_engine_rules[]
+  recommendation_queries      recommendation_queries[]
+}
+
+model fabric_types {
+  fbt_id                 Int                      @id @default(autoincrement())
+  fbt_name               String                   @unique @db.VarChar(100)
+  closet_item_attributes closet_item_attributes[]
+}
+
+model gemstone_types {
+  gst_id                 Int                      @id @default(autoincrement())
+  gst_name               String                   @unique @db.VarChar(100)
+  closet_item_attributes closet_item_attributes[]
+}
+
+model item_categories {
+  itc_id                      Int                           @id @default(autoincrement())
+  itc_name                    String                        @unique @db.VarChar(100)
+  closet_items                closet_items[]
+  recommendation_engine_rules recommendation_engine_rules[]
+}
+
+model item_upload_jobs {
+  iuj_id       Int          @id @default(autoincrement())
+  iuj_ci_id    Int
+  iuj_status   String?      @db.VarChar(50)
+  closet_items closet_items @relation(fields: [iuj_ci_id], references: [ci_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model lookbook_items {
+  lbi_id       Int          @id @default(autoincrement())
+  lbi_lb_id    Int
+  lbi_ci_id    Int
+  closet_items closet_items @relation(fields: [lbi_ci_id], references: [ci_id], onDelete: Cascade, onUpdate: NoAction)
+  lookbooks    lookbooks    @relation(fields: [lbi_lb_id], references: [lb_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model lookbooks {
+  lb_id          Int              @id @default(autoincrement())
+  lb_usr_id      Int
+  lb_name        String?          @db.VarChar(255)
+  lookbook_items lookbook_items[]
+  users          users            @relation(fields: [lb_usr_id], references: [usr_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model metal_types {
+  mtt_id                 Int                      @id @default(autoincrement())
+  mtt_name               String                   @unique @db.VarChar(100)
+  closet_item_attributes closet_item_attributes[]
+}
+
+model neckline_types {
+  nkt_id                      Int                           @id @default(autoincrement())
+  nkt_name                    String                        @unique @db.VarChar(100)
+  closet_item_attributes      closet_item_attributes[]
+  recommendation_engine_rules recommendation_engine_rules[]
+}
+
+model notifications {
+  ntf_id         Int       @id @default(autoincrement())
+  ntf_usr_id     Int
+  ntf_type       String    @db.VarChar(100)
+  ntf_created_at DateTime? @default(now()) @db.Timestamp(6)
+  users          users     @relation(fields: [ntf_usr_id], references: [usr_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model outfit_wear_log {
+  owl_id                Int               @id @default(autoincrement())
+  owl_usr_id            Int
+  owl_so_id             Int
+  owl_event_category_id Int?
+  owl_worn_at           DateTime?         @default(now()) @db.Timestamp(6)
+  event_categories      event_categories? @relation(fields: [owl_event_category_id], references: [evc_id], onUpdate: NoAction)
+  saved_outfits         saved_outfits     @relation(fields: [owl_so_id], references: [so_id], onDelete: Cascade, onUpdate: NoAction)
+  users                 users             @relation(fields: [owl_usr_id], references: [usr_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model recommendation_apparel_suggestions {
+  ras_id                             Int                                  @id @default(autoincrement())
+  ras_rq_id                          Int
+  ras_ci_id                          Int
+  closet_items                       closet_items                         @relation(fields: [ras_ci_id], references: [ci_id], onDelete: Cascade, onUpdate: NoAction)
+  recommendation_queries             recommendation_queries               @relation(fields: [ras_rq_id], references: [rq_id], onDelete: Cascade, onUpdate: NoAction)
+  recommendation_feedback            recommendation_feedback[]
+  recommendation_jewelry_suggestions recommendation_jewelry_suggestions[]
+}
+
+model recommendation_engine_rules {
+  rer_id                  Int               @id @default(autoincrement())
+  rer_neckline_type_id    Int?
+  rer_jewelry_category_id Int?
+  rer_event_category_id   Int?
+  event_categories        event_categories? @relation(fields: [rer_event_category_id], references: [evc_id], onDelete: Cascade, onUpdate: NoAction)
+  item_categories         item_categories?  @relation(fields: [rer_jewelry_category_id], references: [itc_id], onDelete: Cascade, onUpdate: NoAction)
+  neckline_types          neckline_types?   @relation(fields: [rer_neckline_type_id], references: [nkt_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model recommendation_feedback {
+  rf_id                              Int                                 @id @default(autoincrement())
+  rf_usr_id                          Int
+  rf_ras_id                          Int?
+  rf_rjs_id                          Int?
+  rf_rating                          Int?
+  recommendation_apparel_suggestions recommendation_apparel_suggestions? @relation(fields: [rf_ras_id], references: [ras_id], onDelete: Cascade, onUpdate: NoAction)
+  recommendation_jewelry_suggestions recommendation_jewelry_suggestions? @relation(fields: [rf_rjs_id], references: [rjs_id], onDelete: Cascade, onUpdate: NoAction)
+  users                              users                               @relation(fields: [rf_usr_id], references: [usr_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model recommendation_jewelry_suggestions {
+  rjs_id                             Int                                @id @default(autoincrement())
+  rjs_ras_id                         Int
+  rjs_ci_id                          Int
+  recommendation_feedback            recommendation_feedback[]
+  closet_items                       closet_items                       @relation(fields: [rjs_ci_id], references: [ci_id], onDelete: Cascade, onUpdate: NoAction)
+  recommendation_apparel_suggestions recommendation_apparel_suggestions @relation(fields: [rjs_ras_id], references: [ras_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model recommendation_queries {
+  rq_id                              Int                                  @id @default(autoincrement())
+  rq_usr_id                          Int
+  rq_event_category_id               Int?
+  rq_created_at                      DateTime?                            @default(now()) @db.Timestamp(6)
+  recommendation_apparel_suggestions recommendation_apparel_suggestions[]
+  event_categories                   event_categories?                    @relation(fields: [rq_event_category_id], references: [evc_id], onUpdate: NoAction)
+  users                              users                                @relation(fields: [rq_usr_id], references: [usr_id], onDelete: Cascade, onUpdate: NoAction)
+  saved_outfits                      saved_outfits[]
+}
+
+model saved_outfit_items {
+  soi_id        Int           @id @default(autoincrement())
+  soi_so_id     Int
+  soi_ci_id     Int
+  soi_role      String?       @db.VarChar(100)
+  closet_items  closet_items  @relation(fields: [soi_ci_id], references: [ci_id], onDelete: Cascade, onUpdate: NoAction)
+  saved_outfits saved_outfits @relation(fields: [soi_so_id], references: [so_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model saved_outfits {
+  so_id                  Int                     @id @default(autoincrement())
+  so_usr_id              Int
+  so_rq_id               Int?
+  so_created_at          DateTime?               @default(now()) @db.Timestamp(6)
+  outfit_wear_log        outfit_wear_log[]
+  saved_outfit_items     saved_outfit_items[]
+  recommendation_queries recommendation_queries? @relation(fields: [so_rq_id], references: [rq_id], onUpdate: NoAction)
+  users                  users                   @relation(fields: [so_usr_id], references: [usr_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model style_preference_types {
+  spt_id                 Int                      @id @default(autoincrement())
+  spt_name               String                   @unique @db.VarChar(100)
+  user_style_preferences user_style_preferences[]
+}
+
+model user_auth_providers {
+  uap_id       Int    @id @default(autoincrement())
+  uap_usr_id   Int
+  uap_provider String @db.VarChar(100)
+  users        users  @relation(fields: [uap_usr_id], references: [usr_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model user_preference_vectors {
+  upv_id      Int   @id @default(autoincrement())
+  upv_usr_id  Int   @unique
+  upv_weights Json?
+  users       users @relation(fields: [upv_usr_id], references: [usr_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model user_style_preferences {
+  usp2_id                Int                    @id @default(autoincrement())
+  usp2_usr_id            Int
+  usp2_spt_id            Int
+  style_preference_types style_preference_types @relation(fields: [usp2_spt_id], references: [spt_id], onDelete: Cascade, onUpdate: NoAction)
+  users                  users                  @relation(fields: [usp2_usr_id], references: [usr_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model user_styling_profiles {
+  usp_id             Int     @id @default(autoincrement())
+  usp_usr_id         Int     @unique
+  usp_skin_undertone String? @db.VarChar(100)
+  users              users   @relation(fields: [usp_usr_id], references: [usr_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model users {
+  usr_id                  Int                       @id @default(autoincrement())
+  usr_firebase_uid        String?                   @unique @db.VarChar(255)
+  usr_email               String                    @unique @db.VarChar(255)
+  usr_phone_number        String?                   @unique @db.VarChar(50)
+  usr_password_hash       String?                   @db.VarChar(255)
+  usr_gender              String?                   @db.VarChar(50)
+  audit_logs              audit_logs[]
+  closet_item_ai_tags     closet_item_ai_tags[]
+  closet_items            closet_items[]
+  collections             collections[]
+  lookbooks               lookbooks[]
+  notifications           notifications[]
+  outfit_wear_log         outfit_wear_log[]
+  recommendation_feedback recommendation_feedback[]
+  recommendation_queries  recommendation_queries[]
+  saved_outfits           saved_outfits[]
+  user_auth_providers     user_auth_providers[]
+  user_preference_vectors user_preference_vectors?
+  user_style_preferences  user_style_preferences[]
+  user_styling_profiles   user_styling_profiles?
 }
