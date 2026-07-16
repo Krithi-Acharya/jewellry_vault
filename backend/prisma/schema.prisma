@@ -50,6 +50,8 @@ model closet_items {
   ci_usr_id                          Int
   ci_category_id                     Int
   ci_status                          String?                              @default("ACTIVE") @db.VarChar(50)
+  ci_deleted_at                      DateTime?                            @db.Timestamp(6)
+  ci_is_deleted                      Boolean?                             @default(false)
   closet_item_ai_tags                closet_item_ai_tags?
   closet_item_attributes             closet_item_attributes?
   closet_item_images                 closet_item_images[]

@@ -14,7 +14,8 @@ app.use(helmet());
 app.use(cors(config.cors));
 
 // ─── Logging ────────────────────────────────
-app.use(morgan('dev'));
+morgan.token('user', (req) => req.user ? req.user.uid : 'anonymous');
+app.use(morgan(':method :url :status - :response-time ms - User: :user'));
 
 // ─── Body Parsing ───────────────────────────
 app.use(express.json());

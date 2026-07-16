@@ -1,4 +1,5 @@
 import admin from '../config/firebase.js';
+import prisma from '../config/database.js';
 
 export const verifyFirebaseToken = async (req, res, next) => {
   try {
@@ -10,8 +11,18 @@ export const verifyFirebaseToken = async (req, res, next) => {
     const token = authHeader.split('Bearer ')[1];
     const decodedToken = await admin.auth().verifyIdToken(token);
     
-    // Attach user info to request
+    // Attach Firebase user info to request
     req.user = decodedToken;
+    
+    // Fetch corresponding database user
+    const dbUser = await prisma.users.findUnique({
+      where: { usr_firebase_uid: decodedToken.uid }
+    });
+    
+    if (dbUser) {
+      req.dbUser = dbUser;
+    }
+    
     next();
   } catch (error) {
     console.error('Firebase token verification error:', error);
