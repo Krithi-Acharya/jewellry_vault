@@ -75,9 +75,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       setState(() => isLoading = true);
 
       try {
-        // Ask Firebase to send the reset email
-        await FirebaseAuth.instance.sendPasswordResetEmail(
-          email: emailController.text.trim(),
+        // Ask AuthService to send the reset email
+        await AuthService.instance.sendPasswordResetEmail(
+          emailController.text.trim(),
         );
 
         // Tell the user it worked
