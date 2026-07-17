@@ -10,7 +10,7 @@ class ApiService {
 
   ApiService._internal() {
     _dio = Dio(BaseOptions(
-      baseUrl: AppConfig.apiBaseUrl, 
+      baseUrl: AppConfig.apiBaseUrl,
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
     ));
@@ -22,10 +22,10 @@ class ApiService {
           const publicEndpoints = [
             ApiConstants.login,
           ];
-          
+
           if (!publicEndpoints.contains(options.path)) {
-            // Inject Firebase ID token for protected routes
-            final token = await AuthService.instance.getIdToken();
+            // Use the token cached in this session
+            final token = AuthService.instance.currentSessionToken;
             if (token != null) {
               options.headers['Authorization'] = 'Bearer $token';
             }

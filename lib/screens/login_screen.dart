@@ -12,17 +12,11 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // formKey checks if all fields are filled correctly
   final formKey = GlobalKey<FormState>();
-
-  // These read what the user types
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-  // Controls show/hide password
   bool showPassword = false;
-
-  // Controls loading state
   bool _isLoading = false;
 
   @override
@@ -32,22 +26,20 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // Runs when user taps Login
   void login() async {
-    // Check if all fields are valid
     if (!formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
-      // Login with AuthService (single source of truth for auth)
       await AuthService.instance.signIn(
         emailController.text.trim(),
         passwordController.text.trim(),
       );
-
+      
       if (!context.mounted) return;
-      // Close the login screen and let AuthGate reveal the Dashboard
+      // Successfully authenticated! Close this login view so the AuthGate 
+      // parent widget can automatically swap to your Dashboard.
       Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
       if (!context.mounted) return;
@@ -81,15 +73,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // --- Responsive trick: ask, decide, act ---
     double screenWidth = MediaQuery.of(context).size.width;
     bool isBigScreen = screenWidth > 700;
     double formWidth = isBigScreen ? 400 : double.infinity;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFCF9F4),
-
-      // Back button in the top-left, takes you back to Landing Page
       appBar: AppBar(
         backgroundColor: const Color(0xFFFCF9F4),
         elevation: 0,
@@ -98,7 +87,6 @@ class _LoginScreenState extends State<LoginScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -109,11 +97,8 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Logo image
                   Image.asset('assets/logo.png', height: 120, width: 120),
                   const SizedBox(height: 16),
-
-                  // Title
                   const Text(
                     'Jewel Vault',
                     style: TextStyle(
@@ -123,8 +108,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 32),
-
-                  // Email field
                   TextFormField(
                     controller: emailController,
                     decoration: const InputDecoration(
@@ -139,8 +122,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-
-                  // Password field with show/hide eye icon
                   TextFormField(
                     controller: passwordController,
                     obscureText: !showPassword,
@@ -162,8 +143,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
                   const SizedBox(height: 8),
-
-                  // Forgot Password link
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
@@ -182,8 +161,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  // Login button (full width)
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -206,8 +183,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  // Sign up link at bottom
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

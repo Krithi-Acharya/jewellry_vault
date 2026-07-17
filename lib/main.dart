@@ -10,7 +10,13 @@ import 'landing_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env");
+  
+  try {
+    await dotenv.load(fileName: "app_config.env");
+  } catch (e) {
+    print('Warning: .env file could not be loaded: $e');
+  }
+  
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }

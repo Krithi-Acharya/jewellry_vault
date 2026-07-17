@@ -10,10 +10,7 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  // formKey checks if the email field is filled correctly
   final formKey = GlobalKey<FormState>();
-
-  // Reads what the user types
   final emailController = TextEditingController();
 
   // Controls loading state
@@ -25,23 +22,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.dispose();
   }
 
-  // Runs when user taps Send Reset Link
   void resetPassword() async {
-    // Check if field is valid
     if (!formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
-      // Send reset email using AuthService
       await AuthService.instance.sendPasswordResetEmail(
         emailController.text.trim(),
       );
 
       if (!context.mounted) return;
-      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password reset email sent! Check your inbox.')),
+        const SnackBar(
+          content: Text('Password reset email sent! Check your inbox.'),
+        ),
       );
 
       Navigator.pop(context);
@@ -70,14 +65,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // --- Responsive trick: ask, decide, act ---
     double screenWidth = MediaQuery.of(context).size.width;
     bool isBigScreen = screenWidth > 700;
     double formWidth = isBigScreen ? 400 : double.infinity;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFCF9F4),
-
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -88,15 +81,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Icon instead of logo, since this isn't the main entry screen
                   const Icon(
                     Icons.lock_reset,
                     size: 70,
                     color: Color(0xFF1B4332),
                   ),
                   const SizedBox(height: 16),
-
-                  // Title
                   const Text(
                     'Reset Password',
                     style: TextStyle(
@@ -106,16 +96,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-
-                  // Small helper text
                   const Text(
                     'Enter your email and we\'ll send you a link to reset your password',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.black54),
                   ),
                   const SizedBox(height: 32),
-
-                  // Email field with validation
                   TextFormField(
                     controller: emailController,
                     decoration: const InputDecoration(
@@ -130,8 +116,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     },
                   ),
                   const SizedBox(height: 24),
-
-                  // Send reset link button (full width)
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
