@@ -20,7 +20,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   // Controls show/hide password
   bool showPassword = false;
-  
+
   // Controls loading state
   bool _isLoading = false;
 
@@ -36,7 +36,7 @@ class _SignupScreenState extends State<SignupScreen> {
   void signup() async {
     // Check if all fields are valid
     if (!formKey.currentState!.validate()) return;
-    
+
     setState(() => _isLoading = true);
 
     try {
@@ -51,7 +51,7 @@ class _SignupScreenState extends State<SignupScreen> {
       Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
       if (!context.mounted) return;
-      
+
       String message = 'Failed to create account.';
       switch (e.code) {
         case 'email-already-in-use':
@@ -96,8 +96,8 @@ class _SignupScreenState extends State<SignupScreen> {
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
-          child: Container(
-            width: formWidth, // <-- caps width on big screens, full on mobile
+          child: SizedBox(
+            width: formWidth, // caps width on big screens, full on mobile
             child: Form(
               key: formKey,
               child: Column(
@@ -116,53 +116,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       color: Color(0xFF1A1815),
                     ),
                   ),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Please enter your password';
-                  if (value.length < 8) return 'Minimum 8 characters';
-                  if (!value.contains(RegExp(r'[A-Z]'))) return 'Must contain at least one uppercase letter';
-                  if (!value.contains(RegExp(r'[a-z]'))) return 'Must contain at least one lowercase letter';
-                  if (!value.contains(RegExp(r'[0-9]'))) return 'Must contain at least one number';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-
-              // Sign up button (full width)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : signup,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1B4332),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: _isLoading 
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text('Sign Up'),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Already have account link
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Already have an account?'),
-                  TextButton(
-                    // Go back to login screen
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      'Login',
-                      style: TextStyle(color: Color(0xFF1B4332)),
                   const SizedBox(height: 32),
 
                   // Name field
@@ -213,8 +166,11 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                     ),
                     validator: (value) {
-                      if (value!.isEmpty) return 'Please enter your password';
-                      if (value.length < 6) return 'Minimum 6 characters';
+                      if (value == null || value.isEmpty) return 'Please enter your password';
+                      if (value.length < 8) return 'Minimum 8 characters';
+                      if (!value.contains(RegExp(r'[A-Z]'))) return 'Must contain at least one uppercase letter';
+                      if (!value.contains(RegExp(r'[a-z]'))) return 'Must contain at least one lowercase letter';
+                      if (!value.contains(RegExp(r'[0-9]'))) return 'Must contain at least one number';
                       return null;
                     },
                   ),
@@ -224,13 +180,22 @@ class _SignupScreenState extends State<SignupScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: signup,
+                      onPressed: _isLoading ? null : signup,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1B4332),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: const Text('Sign Up'),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text('Sign Up'),
                     ),
                   ),
                   const SizedBox(height: 16),
