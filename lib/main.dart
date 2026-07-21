@@ -9,6 +9,7 @@ import 'screens/signup_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'landing_page.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/app_colors.dart';
 
 import 'presentation/closet/providers/closet_provider.dart';
 import 'presentation/closet/screens/closet_screen.dart';
@@ -56,32 +57,40 @@ class MyApp extends StatelessWidget {
         '/landing': (context) => const LandingPage(),
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
-        '/dashboard': (context) => const DashboardScreen(),
-        '/closet': (context) => const ClosetScreen(),
-        '/upload': (context) => const UploadScreen(),
+        '/dashboard': (context) => const _RequireAuth(child: DashboardScreen()),
+        '/closet': (context) => const _RequireAuth(child: ClosetScreen()),
+        '/upload': (context) => const _RequireAuth(child: UploadScreen()),
       },
 
       onGenerateRoute: (settings) {
+        // These routes carry required arguments, so a direct URL visit without
+        // them must fall back to the auth gate rather than crashing on a cast.
         if (settings.name == '/processing') {
-          final args = settings.arguments as Map<String, dynamic>;
+          final args = settings.arguments;
+          if (args is! Map<String, dynamic>) return _fallbackRoute();
           return MaterialPageRoute(
-            builder: (context) => ProcessingScreen(jobId: args['jobId'], itemId: args['itemId']),
+            builder: (context) => _RequireAuth(
+              child: ProcessingScreen(jobId: args['jobId'], itemId: args['itemId']),
+            ),
           );
 
         } else if (settings.name == '/item-details') {
-          final itemId = settings.arguments as int;
+          final itemId = settings.arguments;
+          if (itemId is! int) return _fallbackRoute();
           return MaterialPageRoute(
-            builder: (context) => ItemDetailsScreen(itemId: itemId),
+            builder: (context) => _RequireAuth(child: ItemDetailsScreen(itemId: itemId)),
           );
         } else if (settings.name == '/metadata-review') {
-          final itemId = settings.arguments as int;
+          final itemId = settings.arguments;
+          if (itemId is! int) return _fallbackRoute();
           return MaterialPageRoute(
-            builder: (context) => MetadataReviewScreen(itemId: itemId),
+            builder: (context) => _RequireAuth(child: MetadataReviewScreen(itemId: itemId)),
           );
         } else if (settings.name == '/recommendations') {
-          final itemId = settings.arguments as int;
+          final itemId = settings.arguments;
+          if (itemId is! int) return _fallbackRoute();
           return MaterialPageRoute(
-            builder: (context) => RecommendationsScreen(itemId: itemId),
+            builder: (context) => _RequireAuth(child: RecommendationsScreen(itemId: itemId)),
           );
         }
         return null;
@@ -118,6 +127,45 @@ class _AuthGate extends StatelessWidget {
 
         // Not signed in: show the Landing Page first.
         return const LandingPage();
+      },
+    );
+  }
+}
+
+/// Route used when a screen is opened without the arguments it requires
+/// (typically a direct URL visit on the web build).
+MaterialPageRoute _fallbackRoute() =>
+    MaterialPageRoute(builder: (context) => const _AuthGate());
+
+/// Wraps a route that requires an authenticated user.
+///
+/// Navigating straight to a protected URL (for example by typing /closet in the
+/// browser) must not expose the screen, so an unauthenticated visitor is shown
+/// the login screen instead.
+class _RequireAuth extends StatelessWidget {
+  final Widget child;
+
+  const _RequireAuth({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: AppColors.background,
+            body: Center(
+              child: CircularProgressIndicator(color: AppColors.primaryEmerald),
+            ),
+          );
+        }
+
+        if (snapshot.hasData && snapshot.data != null) {
+          return child;
+        }
+
+        return const LoginScreen();
       },
     );
   }

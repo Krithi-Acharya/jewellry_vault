@@ -24,6 +24,14 @@ class _ClosetScreenState extends State<ClosetScreen> {
   String _selectedCategory = 'All';
   final TextEditingController _searchController = TextEditingController();
 
+  /// Column count derived from the width the grid actually gets, not the
+  /// window width - the shell caps content well below the screen on desktop.
+  int _columnsFor(double width) {
+    if (width >= 1000) return 4;
+    if (width >= 700) return 3;
+    return 2;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -59,10 +67,15 @@ class _ClosetScreenState extends State<ClosetScreen> {
           ),
           const SizedBox(height: AppSpacing.lg),
 
-          // Search Bar
+          // Search Bar - capped so it doesn't stretch the full content width
+          // on desktop, which reads as an oversized input.
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: TextField(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Search closet...',
@@ -87,6 +100,8 @@ class _ClosetScreenState extends State<ClosetScreen> {
               onChanged: (val) {
                 context.read<ClosetProvider>().setSearchQuery(val);
               },
+                ),
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -138,12 +153,15 @@ class _ClosetScreenState extends State<ClosetScreen> {
           
           // Grid
           Expanded(
-            child: Consumer<ClosetProvider>(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = _columnsFor(constraints.maxWidth);
+                return Consumer<ClosetProvider>(
               builder: (context, provider, child) {
                 if (provider.isLoading) {
                   return MasonryGridView.count(
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
-                    crossAxisCount: MediaQuery.of(context).size.width > 900 ? 4 : (MediaQuery.of(context).size.width > 600 ? 3 : 2),
+                    crossAxisCount: columns,
                     mainAxisSpacing: AppSpacing.md,
                     crossAxisSpacing: AppSpacing.md,
                     itemCount: 6,
@@ -160,7 +178,7 @@ class _ClosetScreenState extends State<ClosetScreen> {
 
                 return MasonryGridView.count(
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
-                  crossAxisCount: MediaQuery.of(context).size.width > 900 ? 4 : (MediaQuery.of(context).size.width > 600 ? 3 : 2),
+                  crossAxisCount: columns,
                   mainAxisSpacing: AppSpacing.md,
                   crossAxisSpacing: AppSpacing.md,
                   itemCount: provider.items.length,
@@ -185,6 +203,8 @@ class _ClosetScreenState extends State<ClosetScreen> {
                       },
                     );
                   },
+                );
+              },
                 );
               },
             ),
