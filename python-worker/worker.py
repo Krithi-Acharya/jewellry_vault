@@ -97,7 +97,7 @@ class Worker:
             # 3. Vision API
             self.db.update_job_status(job_id, 'ANALYZING')
             t3 = time.time()
-            analysis_result = self.vision_provider.analyze(processed_path, prompt_version="metadata_v1")
+            analysis_result = self.vision_provider.analyze(processed_path, prompt_version="metadata_v2")
             t_vision = (time.time() - t3) * 1000
             
             # 4. Save Raw Response
