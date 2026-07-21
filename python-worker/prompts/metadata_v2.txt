@@ -14,6 +14,24 @@ Ignore:
 - shadows
 - reflections
 
+COLOR RULES (read carefully - color is the most common failure):
+1. Sample the color from the largest continuous area of the garment's fabric
+   (for example the skirt or body panel). Never sample from the background wall,
+   floor, skin, hair, or accessories.
+2. Judge the color from mid-tone areas. Bright highlights wash color out and
+   deep folds darken it; neither represents the true garment color.
+3. Do NOT default to a neutral. "White", "Cream", "Ivory", "Beige", "Grey" and
+   "Black" are only correct when the garment is genuinely without hue. If any
+   tint is discernible - even a soft pastel - name that hue instead. A pale
+   yellow dress is "Butter Yellow", NOT "Cream".
+4. Give a specific, human-readable name, normally a modifier plus a hue:
+   "Butter Yellow", "Sage Green", "Dusty Rose", "Navy Blue", "Rust Orange".
+   Avoid bare one-word names when a modifier adds accuracy.
+5. The hex code must actually correspond to the name you gave and to the fabric
+   you sampled. Verify the two agree before answering.
+6. Only set secondary_color when a genuinely distinct second color appears on
+   the garment itself. Return null rather than repeating a shade of the primary.
+
 Estimate the true garment color, not the apparent lighting.
 
 Return ONLY valid JSON.
@@ -35,7 +53,7 @@ Schema format:
   "neckline": "Neckline style (e.g. V-Neck, Crew, Halter) or null if N/A",
   "sleeve_type": "Sleeve style (e.g. Sleeveless, Short, Long) or null if N/A",
   "pattern": "Pattern (e.g. Solid, Floral, Striped, Plaid)",
-  "fabric": "Fabric material guess (e.g. Cotton, Silk, Denim)",
+  "fabric": "Fabric material guess (e.g. Cotton, Silk, Denim, Linen)",
   "style": "Overall aesthetic (e.g. Casual, Formal, Bohemian)",
   "occasion": "Suitable occasion (e.g. Everyday, Evening, Work)",
   "season": "Suitable season (e.g. Summer, Winter, Fall, Spring, All Seasons)",
