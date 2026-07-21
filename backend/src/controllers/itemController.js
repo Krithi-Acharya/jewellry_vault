@@ -1,5 +1,5 @@
 import prisma from '../config/database.js';
-import { mapAiAttributesToFlutter, mapAiColorsToFlutter, mapAiHistory } from '../utils/aiMetadataMapper.js';
+import { mapAiAttributesToFlutter, mapAiColorsToFlutter, mapAiHistory, getPrimaryColorName } from '../utils/aiMetadataMapper.js';
 
 // --- DTO Mappers ---
 const mapItemToDto = (item) => {
@@ -20,7 +20,9 @@ const mapItemToDto = (item) => {
   const aiColors = tags.ai_colors || [];
 
   const categoryName = item.item_categories?.itc_name || 'Uncategorized';
-  const colorName = aiColors.length > 0 ? aiColors[0].name : '';
+  // The worker stores ai_colors as an object of hex values, so resolve the
+  // primary colour to a display name rather than indexing it like an array.
+  const colorName = getPrimaryColorName(aiColors);
   const fabric = aiAttributes.fabric || '';
   const occasion = aiAttributes.occasion || '';
   

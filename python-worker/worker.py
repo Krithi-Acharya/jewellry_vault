@@ -5,7 +5,6 @@ import logging
 from PIL import Image, ExifTags
 from config import Config
 from database import Database
-from color_extractor import ColorExtractor
 from providers.nvidia_provider import NvidiaNimProvider
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
@@ -13,7 +12,6 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 class Worker:
     def __init__(self):
         self.db = Database()
-        self.color_extractor = ColorExtractor(n_colors=2)
         self.vision_provider = NvidiaNimProvider(api_key=Config.NVIDIA_API_KEY, model=Config.NVIDIA_MODEL)
 
         
@@ -24,6 +22,9 @@ class Worker:
     def _download_and_preprocess(self, url: str, job_id: int) -> str:
         t0 = time.time()
         
+        if url.startswith('/'):
+            url = f"http://localhost:5000{url}"
+
         # 1. Download
         local_path = os.path.join(self.temp_dir, f"job_{job_id}_raw.jpg")
         response = requests.get(url, stream=True)
@@ -90,10 +91,8 @@ class Worker:
             # 1. Download & Preprocess
             processed_path, t_download, t_preprocess = self._download_and_preprocess(image_url, job_id)
             
-            # 2. K-Means
-            t2 = time.time()
-            colors = self.color_extractor.extract(processed_path)
-            t_kmeans = (time.time() - t2) * 1000
+            # (Removed K-Means)
+
             
             # 3. Vision API
             self.db.update_job_status(job_id, 'ANALYZING')
@@ -126,7 +125,15 @@ class Worker:
             # Thresholding rules (we save it in DB, let the recommendation engine use or ignore based on threshold)
             ai_data['final_confidence'] = final_confidence
             
-            # 6. Save extracted metadata
+            # 6. Extract colors from AI Data for DB
+            colors = []
+            if ai_data.get('primary_color'):
+                colors.append(ai_data['primary_color'])
+                del ai_data['primary_color']
+            if ai_data.get('secondary_color'):
+                colors.append(ai_data['secondary_color'])
+                del ai_data['secondary_color']
+                
             self.db.save_extracted_metadata(ci_id, colors, ai_data)
             
             self.db.update_job_status(job_id, 'COMPLETED')
@@ -140,10 +147,9 @@ class Worker:
             logging.info(f"Job {job_id} Completed")
             logging.info(f"Download ........ {t_download:.0f} ms")
             logging.info(f"Preprocess ...... {t_preprocess:.0f} ms")
-            logging.info(f"K-Means ......... {t_kmeans:.0f} ms")
             logging.info(f"Vision API ...... {t_vision:.0f} ms")
             logging.info(f"DB Save ......... {t_db:.0f} ms")
-            logging.info(f"Total ........... {t_download + t_preprocess + t_kmeans + t_vision + t_db:.0f} ms")
+            logging.info(f"Total ........... {t_download + t_preprocess + t_vision + t_db:.0f} ms")
             
         except Exception as e:
             logging.error(f"Job {job_id} Failed: {str(e)}")
