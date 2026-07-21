@@ -1,4 +1,6 @@
 import admin from '../config/firebase.js';
+import { getApps } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 import prisma from '../config/database.js';
 
 export const verifyFirebaseToken = async (req, res, next) => {
@@ -9,15 +11,36 @@ export const verifyFirebaseToken = async (req, res, next) => {
     }
 
     const token = authHeader.split('Bearer ')[1];
-    const decodedToken = await admin.auth().verifyIdToken(token);
     
-    // Attach Firebase user info to request
+    let decodedToken;
+    let dbUser;
+    
+    if (getApps().length === 0) {
+      // Mock auth for local dev without service-account.json
+      console.warn('⚠️ Firebase Admin not initialized. Using mock auth for local dev.');
+      decodedToken = {
+        uid: 'mock-user-123',
+        email: 'mock@example.com'
+      };
+      
+      // Auto-create or find mock user
+      dbUser = await prisma.users.upsert({
+        where: { usr_firebase_uid: decodedToken.uid },
+        update: {},
+        create: {
+          usr_firebase_uid: decodedToken.uid,
+          usr_email: decodedToken.email,
+          usr_display_name: 'Dev User',
+        }
+      });
+    } else {
+      decodedToken = await getAuth().verifyIdToken(token);
+      dbUser = await prisma.users.findUnique({
+        where: { usr_firebase_uid: decodedToken.uid }
+      });
+    }
+    
     req.user = decodedToken;
-    
-    // Fetch corresponding database user
-    const dbUser = await prisma.users.findUnique({
-      where: { usr_firebase_uid: decodedToken.uid }
-    });
     
     if (dbUser) {
       req.dbUser = dbUser;

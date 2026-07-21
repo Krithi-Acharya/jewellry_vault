@@ -40,6 +40,18 @@ class _SignupScreenState extends State<SignupScreen> {
         passwordController.text.trim(),
       );
 
+      // Sync user to our PostgreSQL backend immediately
+      final fullName = nameController.text.trim();
+      final nameParts = fullName.split(' ');
+      final firstName = nameParts.first;
+      final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : null;
+
+      await AuthService.instance.syncUserToBackend(
+        displayName: fullName,
+        firstName: firstName,
+        lastName: lastName,
+      );
+
       if (!context.mounted) return;
       Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
