@@ -2,8 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import helmet from 'helmet';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import config from './config/index.js';
 import routes from './routes/index.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -20,6 +25,18 @@ app.use(morgan(':method :url :status - :response-time ms - User: :user'));
 // ─── Body Parsing ───────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded files statically.
+// Allow cross-origin loading of images (Flutter Web fetches these from a different
+// origin than the API); helmet's default same-origin CORP would otherwise block them.
+app.use(
+  '/uploads',
+  (req, res, next) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+  },
+  express.static(path.join(__dirname, '../public/uploads'))
+);
 
 // ─── API Routes ─────────────────────────────
 app.use('/api/v1', routes);

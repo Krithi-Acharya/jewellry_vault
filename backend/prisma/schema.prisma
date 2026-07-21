@@ -52,6 +52,7 @@ model closet_items {
   ci_status                          String?                              @default("ACTIVE") @db.VarChar(50)
   ci_deleted_at                      DateTime?                            @db.Timestamp(6)
   ci_is_deleted                      Boolean?                             @default(false)
+  ci_is_favorite                     Boolean?                             @default(false)
   closet_item_ai_tags                closet_item_ai_tags?
   closet_item_attributes             closet_item_attributes?
   closet_item_images                 closet_item_images[]
@@ -59,6 +60,7 @@ model closet_items {
   users                              users                                @relation(fields: [ci_usr_id], references: [usr_id], onDelete: Cascade, onUpdate: NoAction)
   collection_items                   collection_items[]
   item_upload_jobs                   item_upload_jobs[]
+  item_ai_responses                  item_ai_responses[]
   lookbook_items                     lookbook_items[]
   recommendation_apparel_suggestions recommendation_apparel_suggestions[]
   recommendation_jewelry_suggestions recommendation_jewelry_suggestions[]
@@ -109,10 +111,26 @@ model item_categories {
 }
 
 model item_upload_jobs {
-  iuj_id       Int          @id @default(autoincrement())
-  iuj_ci_id    Int
-  iuj_status   String?      @db.VarChar(50)
-  closet_items closet_items @relation(fields: [iuj_ci_id], references: [ci_id], onDelete: Cascade, onUpdate: NoAction)
+  iuj_id           Int          @id @default(autoincrement())
+  iuj_ci_id        Int
+  iuj_status       String?      @db.VarChar(50) // PENDING, PROCESSING, ANALYZING, COMPLETED, FAILED
+  iuj_image_url    String?      @db.Text
+  iuj_retry_count  Int?         @default(0)
+  iuj_last_error   String?      @db.Text
+  iuj_created_at   DateTime?    @default(now()) @db.Timestamp(6)
+  iuj_processed_at DateTime?    @db.Timestamp(6)
+  closet_items     closet_items @relation(fields: [iuj_ci_id], references: [ci_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model item_ai_responses {
+  iair_id                Int          @id @default(autoincrement())
+  iair_ci_id             Int
+  iair_provider          String?      @db.VarChar(100)
+  iair_model             String?      @db.VarChar(100)
+  iair_prompt_version    String?      @db.VarChar(50)
+  iair_raw_response      Json?
+  iair_created_at        DateTime?    @default(now()) @db.Timestamp(6)
+  closet_items           closet_items @relation(fields: [iair_ci_id], references: [ci_id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model lookbook_items {
@@ -275,7 +293,13 @@ model users {
   usr_email               String                    @unique @db.VarChar(255)
   usr_phone_number        String?                   @unique @db.VarChar(50)
   usr_password_hash       String?                   @db.VarChar(255)
+  usr_first_name          String?                   @db.VarChar(100)
+  usr_last_name           String?                   @db.VarChar(100)
+  usr_display_name        String?                   @db.VarChar(255)
+  usr_profile_picture_url String?                   @db.VarChar(1024)
   usr_gender              String?                   @db.VarChar(50)
+  usr_created_at          DateTime?                 @default(now()) @db.Timestamp(6)
+  usr_updated_at          DateTime?                 @default(now()) @updatedAt @db.Timestamp(6)
   audit_logs              audit_logs[]
   closet_item_ai_tags     closet_item_ai_tags[]
   closet_items            closet_items[]
