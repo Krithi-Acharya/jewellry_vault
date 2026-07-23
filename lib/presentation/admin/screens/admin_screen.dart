@@ -1213,13 +1213,7 @@ class _ItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final thumbnailUrl = (() {
-      final images = item['images'] as List?;
-      if (images != null && images.isNotEmpty) {
-        return (images.first as Map<String, dynamic>)['imageUrl'] as String?;
-      }
-      return null;
-    })();
+    final thumbnailUrl = item['thumbnail_url'] as String?;
 
     final status = item['status'] as String?;
 
