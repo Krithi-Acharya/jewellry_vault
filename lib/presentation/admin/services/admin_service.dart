@@ -14,6 +14,8 @@ class AdminService {
     return Options(headers: {'Authorization': 'Bearer $token'});
   }
 
+  // ── Stats ──────────────────────────────────────────────────────────────
+
   Future<Map<String, dynamic>> fetchStats() async {
     final response = await _dio.get(
       '${AppConfig.apiBaseUrl}${ApiConstants.adminStats}',
@@ -22,12 +24,48 @@ class AdminService {
     return response.data['data'] as Map<String, dynamic>;
   }
 
-  Future<List<Map<String, dynamic>>> fetchUsers() async {
+  // ── Activity feed ──────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> fetchActivity() async {
     final response = await _dio.get(
-      '${AppConfig.apiBaseUrl}${ApiConstants.adminUsers}',
+      '${AppConfig.apiBaseUrl}${ApiConstants.adminActivity}',
       options: await _authOptions(),
     );
     return List<Map<String, dynamic>>.from(response.data['data'] as List);
+  }
+
+  // ── AI Queue ───────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> fetchQueue() async {
+    final response = await _dio.get(
+      '${AppConfig.apiBaseUrl}${ApiConstants.adminQueue}',
+      options: await _authOptions(),
+    );
+    return List<Map<String, dynamic>>.from(response.data['data'] as List);
+  }
+
+  Future<void> retryItem(int itemId) async {
+    await _dio.post(
+      '${AppConfig.apiBaseUrl}${ApiConstants.adminItemRetry(itemId)}',
+      options: await _authOptions(),
+    );
+  }
+
+  // ── Users ──────────────────────────────────────────────────────────────
+
+  Future<({List<Map<String, dynamic>> users, int totalPages})> fetchUsers({
+    int page = 1,
+    int limit = 30,
+  }) async {
+    final response = await _dio.get(
+      '${AppConfig.apiBaseUrl}${ApiConstants.adminUsers}',
+      queryParameters: {'page': page, 'limit': limit},
+      options: await _authOptions(),
+    );
+    final data = List<Map<String, dynamic>>.from(response.data['data'] as List);
+    final meta = response.data['meta'] as Map<String, dynamic>? ?? {};
+    final totalPages = (meta['totalPages'] as int?) ?? 1;
+    return (users: data, totalPages: totalPages);
   }
 
   Future<void> updateUserRole(int userId, String role) async {
@@ -38,12 +76,21 @@ class AdminService {
     );
   }
 
-  Future<List<Map<String, dynamic>>> fetchItems() async {
+  // ── Items ──────────────────────────────────────────────────────────────
+
+  Future<({List<Map<String, dynamic>> items, int totalPages})> fetchItems({
+    int page = 1,
+    int limit = 30,
+  }) async {
     final response = await _dio.get(
       '${AppConfig.apiBaseUrl}${ApiConstants.adminItems}',
+      queryParameters: {'page': page, 'limit': limit},
       options: await _authOptions(),
     );
-    return List<Map<String, dynamic>>.from(response.data['data'] as List);
+    final data = List<Map<String, dynamic>>.from(response.data['data'] as List);
+    final meta = response.data['meta'] as Map<String, dynamic>? ?? {};
+    final totalPages = (meta['totalPages'] as int?) ?? 1;
+    return (items: data, totalPages: totalPages);
   }
 
   Future<void> deleteItem(int itemId) async {

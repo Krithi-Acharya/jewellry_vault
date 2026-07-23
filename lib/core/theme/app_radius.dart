@@ -7,6 +7,7 @@ class AppRadius {
   static const double xlarge = 24.0;
 
   // Semantic aliases used by shared widgets and screens
+  static const double xs = 4.0;
   static const double sm = small;
   static const double input = medium;
   static const double button = medium;

@@ -6,6 +6,9 @@ import {
   updateUserRole,
   getAllItems,
   adminDeleteItem,
+  retryItem,
+  getActivity,
+  getQueue,
 } from '../controllers/adminController.js';
 
 const router = Router();
@@ -14,9 +17,12 @@ const router = Router();
 router.use(verifyFirebaseToken, requireAdmin);
 
 router.get('/stats', getStats);
+router.get('/activity', getActivity);
+router.get('/queue', getQueue);
 router.get('/users', getUsers);
 router.patch('/users/:id/role', updateUserRole);
 router.get('/items', getAllItems);
 router.delete('/items/:id', adminDeleteItem);
+router.post('/items/:id/retry', retryItem);
 
 export default router;

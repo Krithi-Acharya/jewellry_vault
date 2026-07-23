@@ -207,3 +207,120 @@ export const adminDeleteItem = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to remove item' });
   }
 };
+
+// --- Retry stuck item ---
+
+export const retryItem = async (req, res) => {
+  try {
+    const itemId = parseInt(req.params.id);
+
+    const existing = await prisma.closet_items.findUnique({ where: { ci_id: itemId } });
+    if (!existing || existing.ci_is_deleted) {
+      return res.status(404).json({ success: false, message: 'Item not found' });
+    }
+
+    // Reset item status back to AI_PROCESSING
+    await prisma.closet_items.update({
+      where: { ci_id: itemId },
+      data: { ci_status: 'AI_PROCESSING' },
+    });
+
+    // Cancel any FAILED jobs and re-queue by resetting them to PENDING
+    await prisma.item_upload_jobs.updateMany({
+      where: { iuj_ci_id: itemId, iuj_status: { in: ['FAILED', 'ANALYZING'] } },
+      data: { iuj_status: 'PENDING', iuj_last_error: null, iuj_retry_count: 0 },
+    });
+
+    res.status(200).json({ success: true, message: 'Item queued for retry' });
+  } catch (error) {
+    console.error('Error retrying item (admin):', error);
+    res.status(500).json({ success: false, message: 'Failed to retry item' });
+  }
+};
+
+// --- Activity feed (derived from existing timestamps, no schema change) ---
+
+export const getActivity = async (req, res) => {
+  try {
+    const limit = 20;
+
+    // Recent item deletions
+    const deletedItems = await prisma.closet_items.findMany({
+      where: { ci_is_deleted: true, ci_deleted_at: { not: null } },
+      orderBy: { ci_deleted_at: 'desc' },
+      take: limit,
+      include: { users: { select: { usr_email: true } } },
+    });
+
+    // Recent user sign-ups
+    const newUsers = await prisma.users.findMany({
+      orderBy: { usr_created_at: 'desc' },
+      take: limit,
+      select: { usr_id: true, usr_email: true, usr_display_name: true, usr_role: true, usr_created_at: true },
+    });
+
+    // Merge & sort by timestamp descending
+    const events = [
+      ...deletedItems.map((item) => ({
+        type: 'item_deleted',
+        description: `Item "${item.ci_display_title ?? 'Unknown'}" removed`,
+        actor: item.users?.usr_email ?? 'unknown',
+        timestamp: item.ci_deleted_at,
+      })),
+      ...newUsers.map((u) => ({
+        type: 'user_joined',
+        description: `${u.usr_display_name || u.usr_email} joined`,
+        actor: u.usr_email,
+        timestamp: u.usr_created_at,
+      })),
+    ]
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .slice(0, limit);
+
+    res.status(200).json({ success: true, data: events });
+  } catch (error) {
+    console.error('Error fetching activity:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch activity' });
+  }
+};
+
+// --- AI queue (items stuck in processing) ---
+
+export const getQueue = async (req, res) => {
+  try {
+    const items = await prisma.closet_items.findMany({
+      where: {
+        ci_is_deleted: false,
+        ci_status: { in: ['AI_PROCESSING', 'PENDING'] },
+      },
+      orderBy: { ci_created_at: 'asc' },
+      take: 50,
+      include: {
+        users: { select: { usr_id: true, usr_email: true } },
+        closet_item_images: { take: 1 },
+        item_upload_jobs: {
+          orderBy: { iuj_id: 'desc' },
+          take: 1,
+          select: { iuj_status: true, iuj_last_error: true, iuj_retry_count: true },
+        },
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      data: items.map((item) => ({
+        id: item.ci_id,
+        displayTitle: item.ci_display_title ?? 'Unnamed item',
+        status: item.ci_status,
+        ownerEmail: item.users?.usr_email,
+        ownerId: item.users?.usr_id,
+        createdAt: item.ci_created_at,
+        thumbnailUrl: item.closet_item_images?.[0]?.cii_image_url ?? null,
+        latestJob: item.item_upload_jobs?.[0] ?? null,
+      })),
+    });
+  } catch (error) {
+    console.error('Error fetching AI queue:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch queue' });
+  }
+};
