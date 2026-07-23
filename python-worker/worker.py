@@ -134,6 +134,22 @@ class Worker:
                 colors.append(ai_data['secondary_color'])
                 del ai_data['secondary_color']
                 
+            # 7. Point the item at the detected category. Uploads start on a
+            # placeholder category, so skipping this leaves every item filed
+            # under whichever category happens to be first in the table.
+            matched_category = self.db.apply_ai_category(
+                ci_id,
+                ai_data.get('category'),
+                ai_data.get('subcategory')
+            )
+            if matched_category:
+                logging.info(f"Item {ci_id} categorised as id={matched_category}")
+            else:
+                logging.warning(
+                    f"Item {ci_id}: no category matched "
+                    f"(category={ai_data.get('category')!r}, subcategory={ai_data.get('subcategory')!r})"
+                )
+
             self.db.save_extracted_metadata(ci_id, colors, ai_data)
             
             self.db.update_job_status(job_id, 'COMPLETED')

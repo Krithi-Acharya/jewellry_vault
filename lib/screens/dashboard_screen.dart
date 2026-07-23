@@ -53,17 +53,25 @@ class ClosetItem {
   );
 
   /// Builds a ClosetItem from the JSON shape returned by the backend API.
+  ///
+  /// The real item DTO (see backend/src/controllers/itemController.js)
+  /// uses display_title/categoryName rather than the title/category/brand/
+  /// color/season/wornCount/matchScore fields this model was originally
+  /// written against, and has no equivalent for most of them. Those fields
+  /// fall back to honest defaults rather than being invented.
   factory ClosetItem.fromJson(Map<String, dynamic> json) => ClosetItem(
     id: json['id'].toString(),
-    title: json['title'] ?? '',
-    category: json['category'] ?? 'Garment',
+    title: json['display_title'] ?? json['title'] ?? '',
+    category: json['categoryName'] ?? json['category'] ?? 'Garment',
     brand: json['brand'] ?? 'Unknown',
     color: json['color'] ?? '—',
     season: json['season'] ?? 'All',
     wornCount: json['wornCount'] ?? 0,
     matchScore: (json['matchScore'] as num?)?.toDouble() ?? 80,
     isFavorite: json['isFavorite'] ?? false,
-    icon: _iconFromKey(json['icon'] ?? 'checkroom_outlined'),
+    icon: json['icon'] != null
+        ? _iconFromKey(json['icon'])
+        : _iconForCategory(json['categoryName'] ?? json['category']),
   );
 
   /// The subset of fields the backend needs to catalog a new item.
@@ -94,6 +102,23 @@ IconData _iconFromKey(String key) {
   }
 }
 
+/// Picks a reasonable icon straight from the item's real category name,
+/// since the backend DTO doesn't carry an icon field of its own.
+IconData _iconForCategory(String? categoryName) {
+  switch (categoryName?.toLowerCase()) {
+    case 'ring':
+    case 'necklace':
+    case 'earrings':
+    case 'bracelet':
+    case 'watch':
+      return Icons.diamond_outlined;
+    case 'bag':
+      return Icons.shopping_bag_outlined;
+    default:
+      return Icons.checkroom_outlined;
+  }
+}
+
 String _iconToKey(IconData icon) {
   if (icon == Icons.diamond_outlined) return 'diamond_outlined';
   if (icon == Icons.shopping_bag_outlined) return 'shopping_bag_outlined';
@@ -103,204 +128,6 @@ String _iconToKey(IconData icon) {
   return 'checkroom_outlined';
 }
 
-// ─────────────────────────────────────────────
-//  SEED DATA
-// ─────────────────────────────────────────────
-
-final List<ClosetItem> _seedItems = [
-  ClosetItem(
-    id: '1',
-    title: 'Silk Slip Dress',
-    category: 'Garment',
-    brand: 'Reformation',
-    color: 'Champagne',
-    season: 'Summer',
-    wornCount: 6,
-    matchScore: 98,
-    isFavorite: true,
-    icon: Icons.checkroom_outlined,
-  ),
-  ClosetItem(
-    id: '2',
-    title: 'Emerald Pendant',
-    category: 'Jewelry',
-    brand: 'Mejuri',
-    color: 'Green',
-    season: 'All',
-    wornCount: 12,
-    matchScore: 98,
-    isFavorite: true,
-    icon: Icons.diamond_outlined,
-  ),
-  ClosetItem(
-    id: '3',
-    title: 'Velvet Blazer',
-    category: 'Garment',
-    brand: 'Zara',
-    color: 'Midnight Blue',
-    season: 'Winter',
-    wornCount: 4,
-    matchScore: 92,
-    isFavorite: false,
-    icon: Icons.checkroom_outlined,
-  ),
-  ClosetItem(
-    id: '4',
-    title: 'Diamond Stud Earrings',
-    category: 'Jewelry',
-    brand: 'Tiffany & Co.',
-    color: 'Silver',
-    season: 'All',
-    wornCount: 20,
-    matchScore: 95,
-    isFavorite: true,
-    icon: Icons.diamond_outlined,
-  ),
-  ClosetItem(
-    id: '5',
-    title: 'Cashmere Trench',
-    category: 'Garment',
-    brand: 'Max Mara',
-    color: 'Camel',
-    season: 'Autumn',
-    wornCount: 8,
-    matchScore: 91,
-    isFavorite: false,
-    icon: Icons.checkroom_outlined,
-  ),
-  ClosetItem(
-    id: '6',
-    title: 'Pearl Drop Necklace',
-    category: 'Jewelry',
-    brand: 'Mikimoto',
-    color: 'White',
-    season: 'All',
-    wornCount: 5,
-    matchScore: 89,
-    isFavorite: false,
-    icon: Icons.diamond_outlined,
-  ),
-  ClosetItem(
-    id: '7',
-    title: 'Linen Wide-Leg Trousers',
-    category: 'Garment',
-    brand: 'COS',
-    color: 'Ecru',
-    season: 'Summer',
-    wornCount: 9,
-    matchScore: 87,
-    isFavorite: false,
-    icon: Icons.checkroom_outlined,
-  ),
-  ClosetItem(
-    id: '8',
-    title: 'Gold Cuff Bracelet',
-    category: 'Jewelry',
-    brand: 'Monica Vinader',
-    color: 'Gold',
-    season: 'All',
-    wornCount: 15,
-    matchScore: 94,
-    isFavorite: true,
-    icon: Icons.diamond_outlined,
-  ),
-  ClosetItem(
-    id: '9',
-    title: 'Quilted Evening Bag',
-    category: 'Bag',
-    brand: 'Chanel',
-    color: 'Black',
-    season: 'All',
-    wornCount: 7,
-    matchScore: 96,
-    isFavorite: true,
-    icon: Icons.shopping_bag_outlined,
-  ),
-  ClosetItem(
-    id: '10',
-    title: 'Merino Turtleneck',
-    category: 'Garment',
-    brand: 'Uniqlo',
-    color: 'Ivory',
-    season: 'Winter',
-    wornCount: 14,
-    matchScore: 83,
-    isFavorite: false,
-    icon: Icons.checkroom_outlined,
-  ),
-  ClosetItem(
-    id: '11',
-    title: 'Tortoise Sunglasses',
-    category: 'Accessory',
-    brand: 'Celine',
-    color: 'Tortoise',
-    season: 'Summer',
-    wornCount: 18,
-    matchScore: 85,
-    isFavorite: false,
-    icon: Icons.wb_sunny_outlined,
-  ),
-  ClosetItem(
-    id: '12',
-    title: 'Sapphire Ring',
-    category: 'Jewelry',
-    brand: 'Catbird',
-    color: 'Blue',
-    season: 'All',
-    wornCount: 3,
-    matchScore: 90,
-    isFavorite: false,
-    icon: Icons.diamond_outlined,
-  ),
-  ClosetItem(
-    id: '13',
-    title: 'Satin Midi Skirt',
-    category: 'Garment',
-    brand: 'Rotate',
-    color: 'Blush',
-    season: 'Spring',
-    wornCount: 5,
-    matchScore: 88,
-    isFavorite: false,
-    icon: Icons.checkroom_outlined,
-  ),
-  ClosetItem(
-    id: '14',
-    title: 'Leather Tote',
-    category: 'Bag',
-    brand: 'A.P.C.',
-    color: 'Tan',
-    season: 'All',
-    wornCount: 22,
-    matchScore: 93,
-    isFavorite: true,
-    icon: Icons.shopping_bag_outlined,
-  ),
-  ClosetItem(
-    id: '15',
-    title: 'Crystal Hair Clip',
-    category: 'Accessory',
-    brand: 'Jennifer Behr',
-    color: 'Crystal',
-    season: 'All',
-    wornCount: 10,
-    matchScore: 82,
-    isFavorite: false,
-    icon: Icons.face_retouching_natural_outlined,
-  ),
-  ClosetItem(
-    id: '16',
-    title: 'Silk Scarf',
-    category: 'Accessory',
-    brand: 'Hermès',
-    color: 'Multi',
-    season: 'Spring',
-    wornCount: 6,
-    matchScore: 91,
-    isFavorite: true,
-    icon: Icons.wb_cloudy_outlined,
-  ),
-];
 
 // ─────────────────────────────────────────────
 //  MAIN DASHBOARD SHELL
@@ -316,38 +143,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
   List<ClosetItem> _closetItems = [];
   bool _isLoading = true;
+  bool _loadFailed = false;
+  bool _isAdmin = false;
+  String? _displayName;
 
   @override
   void initState() {
     super.initState();
     _loadClosetItems();
+    AuthService.instance.fetchProfile().then((profile) {
+      if (mounted) {
+        setState(() {
+          _isAdmin = profile.isAdmin;
+          _displayName = profile.displayName;
+        });
+      }
+    });
   }
 
   Future<void> _loadClosetItems() async {
+    setState(() {
+      _isLoading = true;
+      _loadFailed = false;
+    });
+
     try {
       final data = await ApiService.fetchClosetItems();
+      if (!mounted) return;
       setState(() {
         _closetItems = data.map(ClosetItem.fromJson).toList();
         _isLoading = false;
       });
     } catch (e) {
-      // Backend not reachable yet (e.g. server not running) — fall back to
-      // sample data so the UI is still usable during development.
+      // Showing invented items here would misrepresent the user's closet, so
+      // surface the failure and let them retry instead.
+      if (!mounted) return;
       setState(() {
-        _closetItems = List.from(_seedItems);
+        _closetItems = [];
+        _loadFailed = true;
         _isLoading = false;
       });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not reach the server — showing sample data.'),
-          ),
-        );
-      }
     }
   }
 
-  final List<Map<String, dynamic>> _navItems = [
+  List<Map<String, dynamic>> get _navItems => [
     {
       'title': 'Dashboard',
       'icon': Icons.dashboard_outlined,
@@ -368,6 +207,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       'icon': Icons.add_circle_outline,
       'selectedIcon': Icons.add_circle,
     },
+    if (_isAdmin)
+      {
+        'title': 'Admin',
+        'icon': Icons.admin_panel_settings_outlined,
+        'selectedIcon': Icons.admin_panel_settings,
+      },
   ];
 
   Future<void> _addItem(ClosetItem item) async {
@@ -390,6 +235,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         );
       }
+    }
+  }
+
+  /// Handles a sidebar tap. Some entries push a dedicated route instead of
+  /// switching the inline view; matching by title (rather than a raw index)
+  /// keeps this correct even though the Admin entry only exists conditionally,
+  /// which would otherwise shift every index after it.
+  void _handleNavTap(Map<String, dynamic> item, int index) {
+    switch (item['title']) {
+      case 'My Closet':
+        Navigator.pushNamed(context, '/closet');
+        break;
+      case 'Add New Item':
+        Navigator.pushNamed(context, '/upload');
+        break;
+      case 'Admin':
+        Navigator.pushNamed(context, '/admin');
+        break;
+      default:
+        setState(() => _selectedIndex = index);
     }
   }
 
@@ -428,9 +293,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     }
 
+    if (_loadFailed) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.cloud_off_outlined, size: 48, color: AppColors.mutedText),
+                const SizedBox(height: 24),
+                Text(
+                  "Couldn't load your closet",
+                  style: AppTypography.headingSmall,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'We could not reach the server. Check your connection and try again.',
+                  style: AppTypography.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                OutlinedButton(
+                  onPressed: _loadClosetItems,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryEmerald,
+                    side: const BorderSide(color: AppColors.primaryEmerald),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  ),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final List<Widget> views = [
       _DashboardView(
         items: _closetItems,
+        displayName: _displayName,
         onNavigateToCloset: () => Navigator.pushNamed(context, '/closet'),
         onNavigateToOutfits: () => setState(() => _selectedIndex = 2),
         onNavigateToAdd: () => Navigator.pushNamed(context, '/upload'),
@@ -448,15 +353,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: _SidebarContent(
                 selectedIndex: _selectedIndex,
                 navItems: _navItems,
+                displayName: _displayName,
                 onSelected: (i) {
                   Navigator.pop(context);
-                  if (i == 1) {
-                    Navigator.pushNamed(context, '/closet');
-                  } else if (i == 3) {
-                    Navigator.pushNamed(context, '/upload');
-                  } else {
-                    setState(() => _selectedIndex = i);
-                  }
+                  _handleNavTap(_navItems[i], i);
                 },
               ),
             )
@@ -486,15 +386,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: _SidebarContent(
                   selectedIndex: _selectedIndex,
                   navItems: _navItems,
-                  onSelected: (i) {
-                    if (i == 1) {
-                      Navigator.pushNamed(context, '/closet');
-                    } else if (i == 3) {
-                      Navigator.pushNamed(context, '/upload');
-                    } else {
-                      setState(() => _selectedIndex = i);
-                    }
-                  },
+                  displayName: _displayName,
+                  onSelected: (i) => _handleNavTap(_navItems[i], i),
                 ),
               ),
             ),
@@ -562,12 +455,14 @@ class _LogoRow extends StatelessWidget {
 class _SidebarContent extends StatelessWidget {
   final int selectedIndex;
   final List<Map<String, dynamic>> navItems;
+  final String? displayName;
   final Function(int) onSelected;
 
   const _SidebarContent({
     required this.selectedIndex,
     required this.navItems,
     required this.onSelected,
+    this.displayName,
   });
 
   @override
@@ -576,8 +471,15 @@ class _SidebarContent extends StatelessWidget {
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
         final user = snapshot.data;
-        final displayName =
-            user?.displayName ?? user?.email?.split('@')[0] ?? 'User';
+        // Prefer the name synced to our own backend - Firebase Auth's own
+        // displayName is only set if something calls updateProfile() on the
+        // Firebase user, which this app never does, so it's null even for
+        // accounts that gave a name at signup.
+        final resolvedName = displayName?.isNotEmpty == true
+            ? displayName
+            : user?.displayName;
+        final greetingName =
+            resolvedName ?? user?.email?.split('@')[0] ?? 'User';
 
         return Container(
           color: AppColors.surface,
@@ -652,14 +554,14 @@ class _SidebarContent extends StatelessWidget {
                   radius: 18,
                   backgroundColor: AppColors.accentGoldLight,
                   child: Text(
-                    displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U',
+                    greetingName.isNotEmpty ? greetingName[0].toUpperCase() : 'U',
                     style: AppTypography.labelLarge.copyWith(
                       color: AppColors.accentGold,
                     ),
                   ),
                 ),
                 title: Text(
-                  displayName,
+                  greetingName,
                   style: AppTypography.labelLarge,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -706,6 +608,7 @@ class _SidebarContent extends StatelessWidget {
 
 class _DashboardView extends StatelessWidget {
   final List<ClosetItem> items;
+  final String? displayName;
   final VoidCallback onNavigateToCloset;
   final VoidCallback onNavigateToOutfits;
   final VoidCallback onNavigateToAdd;
@@ -715,14 +618,17 @@ class _DashboardView extends StatelessWidget {
     required this.onNavigateToCloset,
     required this.onNavigateToOutfits,
     required this.onNavigateToAdd,
+    this.displayName,
   });
 
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    final displayName =
-        user?.displayName ?? user?.email?.split('@')[0] ?? 'there';
-    final firstName = displayName.split(' ')[0];
+    // Prefer the name synced to our own backend over Firebase Auth's own
+    // displayName, which this app never sets via updateProfile().
+    final resolvedName = displayName?.isNotEmpty == true ? displayName : user?.displayName;
+    final greetingName = resolvedName ?? user?.email?.split('@')[0] ?? 'there';
+    final firstName = greetingName.split(' ')[0];
 
     final garmentCount = items.where((e) => e.category == 'Garment').length;
     final jewelryCount = items.where((e) => e.category == 'Jewelry').length;

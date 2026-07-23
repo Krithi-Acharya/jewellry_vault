@@ -19,6 +19,8 @@ import 'presentation/closet/screens/processing_screen.dart';
 import 'presentation/closet/screens/item_details_screen.dart';
 import 'presentation/closet/screens/metadata_review_screen.dart';
 import 'presentation/closet/screens/recommendations_screen.dart';
+import 'presentation/admin/screens/admin_screen.dart';
+import 'services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -60,6 +62,7 @@ class MyApp extends StatelessWidget {
         '/dashboard': (context) => const _RequireAuth(child: DashboardScreen()),
         '/closet': (context) => const _RequireAuth(child: ClosetScreen()),
         '/upload': (context) => const _RequireAuth(child: UploadScreen()),
+        '/admin': (context) => const _RequireAuth(child: _RequireAdmin(child: AdminScreen())),
       },
 
       onGenerateRoute: (settings) {
@@ -166,6 +169,68 @@ class _RequireAuth extends StatelessWidget {
         }
 
         return const LoginScreen();
+      },
+    );
+  }
+}
+
+/// Wraps a route that requires the signed-in user to have the admin role.
+///
+/// Must sit inside a _RequireAuth so a real user is already signed in;
+/// the role check itself always hits the backend rather than trusting any
+/// client-cached value, since a role can change mid-session.
+class _RequireAdmin extends StatelessWidget {
+  final Widget child;
+
+  const _RequireAdmin({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: AuthService.instance.checkIsAdmin(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: AppColors.background,
+            body: Center(
+              child: CircularProgressIndicator(color: AppColors.primaryEmerald),
+            ),
+          );
+        }
+
+        if (snapshot.data == true) {
+          return child;
+        }
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.lock_outline, size: 48, color: AppColors.mutedText),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "You don't have access to this page.",
+                    style: TextStyle(color: AppColors.primaryText, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  OutlinedButton(
+                    onPressed: () => Navigator.pushReplacementNamed(context, '/dashboard'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primaryEmerald,
+                      side: const BorderSide(color: AppColors.primaryEmerald),
+                    ),
+                    child: const Text('Back to Dashboard'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
       },
     );
   }

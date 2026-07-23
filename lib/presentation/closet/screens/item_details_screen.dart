@@ -8,6 +8,8 @@ import '../../../services/auth_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_layout.dart';
+import '../../../core/theme/app_radius.dart';
 
 class ItemDetailsScreen extends StatefulWidget {
   final int itemId;
@@ -219,10 +221,13 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
         manualAttributes[entry.key] = entry.value.text;
       }
 
-      final Map<String, dynamic> manualColors = {};
-      for (var c in _editedColors) {
-        manualColors[c['name']] = c['hex'];
-      }
+      // Sent as an ordered list (index 0 = primary, 1 = secondary) so the
+      // backend can replace ai_colors positionally instead of merging by
+      // display name, which previously left stale colors behind under
+      // whatever name a chip happened to be showing at edit time.
+      final List<Map<String, dynamic>> manualColors = _editedColors
+          .map((c) => {'name': c['name'], 'hex': c['hex']})
+          .toList();
 
       final token = await AuthService.instance.getIdToken();
       final url = '${AppConfig.apiBaseUrl}/items/${widget.itemId}';
@@ -649,63 +654,107 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
         ? '${AppConfig.apiBaseUrl.replaceAll('/api/v1', '')}${_metadata!['image']}'
         : null;
 
+    final bool isWide = !AppLayout.isMobile(context);
+    final bool isDesktop = AppLayout.isDesktop(context);
+
+    final Widget details = Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSummarySection(),
+          const SizedBox(height: AppSpacing.xl),
+
+          _buildStyleWithAiSection(),
+          const SizedBox(height: AppSpacing.xl),
+
+          _buildAiAnalysisSection(),
+          const SizedBox(height: AppSpacing.xl),
+
+          _buildManualMetadataSection(),
+          const SizedBox(height: AppSpacing.xl),
+
+          _buildDangerZone(),
+          const SizedBox(height: 60), // padding for scrolling
+        ],
+      ),
+    );
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
           SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Image (30% height)
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.3,
-                  width: double.infinity,
-                  child: imageUrl != null
-                    ? Image.network(
-                        imageUrl,
-                        fit: BoxFit.cover,
-                        alignment: Alignment.topCenter,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: AppColors.border,
-                          child: const Center(
-                            child: Icon(Icons.broken_image_outlined, color: AppColors.mutedText),
-                          ),
+            // Desktop must not stretch edge to edge, so content is centred
+            // within the same max width the rest of the app uses.
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: AppLayout.desktopMaxWidth),
+                child: isWide
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.xxl),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // The image keeps its own proportions instead of
+                            // being cropped into a wide letterbox strip.
+                            Expanded(
+                              flex: isDesktop ? 30 : 40,
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: AppSpacing.lg),
+                                child: _buildHeroImage(imageUrl, aspectRatio: 3 / 4),
+                              ),
+                            ),
+                            Expanded(
+                              flex: isDesktop ? 70 : 60,
+                              child: details,
+                            ),
+                          ],
                         ),
                       )
-                    : Container(color: AppColors.border),
-                ),
-                
-                // Content
-                Padding(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSummarySection(),
-                      const SizedBox(height: AppSpacing.xl),
-                      
-                      _buildStyleWithAiSection(),
-                      const SizedBox(height: AppSpacing.xl),
-                      
-                      _buildAiAnalysisSection(),
-                      const SizedBox(height: AppSpacing.xl),
-                      
-                      _buildManualMetadataSection(),
-                      const SizedBox(height: AppSpacing.xl),
-                      
-                      _buildDangerZone(),
-                      const SizedBox(height: 60), // padding for scrolling
-                    ],
-                  ),
-                ),
-              ],
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.4,
+                            width: double.infinity,
+                            child: _buildHeroImage(imageUrl),
+                          ),
+                          details,
+                        ],
+                      ),
+              ),
             ),
           ),
-          
+
           _buildTopBar(),
         ],
       ),
+    );
+  }
+
+  /// Hero image for the item. When [aspectRatio] is supplied the image keeps
+  /// that shape (used on wider layouts); otherwise it fills the given space.
+  Widget _buildHeroImage(String? imageUrl, {double? aspectRatio}) {
+    final Widget image = imageUrl != null
+        ? Image.network(
+            imageUrl,
+            fit: BoxFit.cover,
+            alignment: Alignment.topCenter,
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: AppColors.border,
+              child: const Center(
+                child: Icon(Icons.broken_image_outlined, color: AppColors.mutedText),
+              ),
+            ),
+          )
+        : Container(color: AppColors.border);
+
+    if (aspectRatio == null) return image;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadius.card),
+      child: AspectRatio(aspectRatio: aspectRatio, child: image),
     );
   }
 }

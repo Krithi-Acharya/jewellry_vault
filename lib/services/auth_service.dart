@@ -87,4 +87,52 @@ class AuthService {
       print('Failed to sync user to backend: $e');
     }
   }
+
+  // Fetches the caller's own backend profile. Used to decide whether to show
+  // admin-only UI; always hits the network rather than trusting a cached
+  // value, since a role can be changed by another admin mid-session.
+  Future<bool> checkIsAdmin() async {
+    final token = await getIdToken();
+    if (token == null) return false;
+
+    try {
+      final dio = Dio();
+      final url = '${AppConfig.apiBaseUrl}${ApiConstants.me}';
+      final response = await dio.get(
+        url,
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      final role = response.data?['data']?['user']?['usr_role'];
+      return role == 'admin';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Fetches the caller's synced profile (role + display name) in one call.
+  // The display name here is the one stored in Postgres via sync-user, which
+  // is independent of Firebase Auth's own currentUser.displayName - that
+  // field is only set if something explicitly calls updateProfile() on the
+  // Firebase user, which this app never does, so it's null even for accounts
+  // that provided a name on signup.
+  Future<({bool isAdmin, String? displayName})> fetchProfile() async {
+    final token = await getIdToken();
+    if (token == null) return (isAdmin: false, displayName: null);
+
+    try {
+      final dio = Dio();
+      final url = '${AppConfig.apiBaseUrl}${ApiConstants.me}';
+      final response = await dio.get(
+        url,
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      final user = response.data?['data']?['user'];
+      return (
+        isAdmin: user?['usr_role'] == 'admin',
+        displayName: user?['usr_display_name'] as String?,
+      );
+    } catch (e) {
+      return (isAdmin: false, displayName: null);
+    }
+  }
 }

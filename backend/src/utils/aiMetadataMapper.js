@@ -74,8 +74,19 @@ export const mapAiColorsToFlutter = (aiColors) => {
     }
   }
 
-  return colorsArray;
+  // Structural keys like "primary_color" are storage details, not something a
+  // user should read on a colour chip. Resolve those to a real colour name.
+  return colorsArray.map((color) => ({
+    ...color,
+    name: isPlaceholderColorName(color.name)
+      ? hexToColorName(color.hex) || color.name
+      : color.name,
+  }));
 };
+
+/** True when a colour's name is a storage key rather than a colour. */
+const isPlaceholderColorName = (name) =>
+  !name || /^(primary_color|secondary_color|color_\d+)$/.test(name);
 
 /**
  * Human-readable names for the hex values the vision model returns.
@@ -90,9 +101,12 @@ const NAMED_COLORS = [
   ['Camel', 0xc1, 0x9a, 0x6b], ['Tan', 0xd2, 0xb4, 0x8c], ['Khaki', 0xc3, 0xb0, 0x91],
   ['Brown', 0x8b, 0x45, 0x13], ['Chocolate', 0x7b, 0x3f, 0x00],
   ['Navy', 0x00, 0x00, 0x80], ['Blue', 0x00, 0x00, 0xff], ['Sky Blue', 0x87, 0xce, 0xeb],
+  ['Denim Blue', 0x3e, 0x5c, 0x76], ['Steel Blue', 0x46, 0x82, 0xb4],
+  ['Cobalt', 0x00, 0x47, 0xab], ['Powder Blue', 0xb0, 0xe0, 0xe6],
   ['Teal', 0x00, 0x80, 0x80], ['Turquoise', 0x40, 0xe0, 0xd0],
   ['Green', 0x00, 0x80, 0x00], ['Emerald', 0x50, 0xc8, 0x78], ['Olive', 0x80, 0x80, 0x00],
-  ['Sage', 0x9c, 0xaf, 0x88], ['Mint', 0x98, 0xff, 0x98],
+  ['Forest Green', 0x22, 0x8b, 0x22], ['Sage', 0x9c, 0xaf, 0x88], ['Mint', 0x98, 0xff, 0x98],
+  ['Terracotta', 0xe2, 0x72, 0x5b], ['Mauve', 0xb7, 0x8b, 0xa3], ['Wine', 0x72, 0x2f, 0x37],
   ['Yellow', 0xff, 0xff, 0x00], ['Golden Yellow', 0xff, 0xdf, 0x00], ['Gold', 0xd4, 0xaf, 0x37],
   ['Mustard', 0xff, 0xdb, 0x58], ['Orange', 0xff, 0xa5, 0x00], ['Coral', 0xff, 0x7f, 0x50],
   ['Peach', 0xff, 0xe5, 0xb4], ['Red', 0xff, 0x00, 0x00], ['Crimson', 0xdc, 0x14, 0x3c],
@@ -143,16 +157,9 @@ export const getPrimaryColorName = (aiColors) => {
   const mapped = mapAiColorsToFlutter(aiColors);
   if (mapped.length === 0) return '';
 
-  const primary = mapped.find((c) => c.name === 'primary_color') || mapped[0];
-  if (!primary) return '';
-
-  // The vision model usually supplies a real colour name ("Cream"). Only fall
-  // back to matching the hex when the name is a structural key rather than a
-  // colour, which is the case for older records written without a name.
-  const isPlaceholder =
-    !primary.name || /^(primary_color|secondary_color|color_\d+)$/.test(primary.name);
-
-  return isPlaceholder ? hexToColorName(primary.hex) : primary.name;
+  // mapAiColorsToFlutter already resolves storage keys to real colour names,
+  // so the first entry is the primary colour ready for display.
+  return mapped[0]?.name ?? '';
 };
 
 /**

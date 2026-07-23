@@ -1,20 +1,15 @@
 import 'dart:convert';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'core/config/app_config.dart';
 
 class ApiService {
-  // Android emulator -> 10.0.2.2 maps to your computer's localhost.
-  // iOS simulator / web -> localhost works directly.
-  // Physical device (either OS) -> replace with your computer's LAN IP,
-  //   e.g. 'http://192.168.1.42:3000/api', and make sure the phone is on
-  //   the same Wi-Fi network as the backend.
-  static String get baseUrl {
-    if (kIsWeb) return 'http://localhost:3000/api';
-    if (Platform.isAndroid) return 'http://10.0.2.2:3000/api';
-    return 'http://localhost:3000/api';
-  }
+  // This pointed at a standalone prototype server (localhost:3000/api/closet)
+  // that predates the real backend and no longer exists, which is why the
+  // Dashboard could never load items. AppConfig.apiBaseUrl is the same
+  // backend every other screen (Closet, Item Details, Upload) already
+  // talks to.
+  static String get baseUrl => AppConfig.apiBaseUrl;
 
   static Future<Map<String, String>> _authHeaders() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -32,16 +27,29 @@ class ApiService {
   static Future<List<Map<String, dynamic>>> fetchClosetItems() async {
     final headers = await _authHeaders();
     final response = await http.get(
-      Uri.parse('$baseUrl/closet'),
+      Uri.parse('$baseUrl/items'),
       headers: headers,
     );
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
+      // The real API wraps results as {success, data: [...], meta}, not a
+      // bare array.
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      final List<dynamic> data = body['data'] as List<dynamic>? ?? [];
       return data.cast<Map<String, dynamic>>();
     }
     throw Exception('Failed to load closet items (${response.statusCode})');
   }
+
+  // addClosetItem/updateClosetItem/deleteClosetItem below still point at the
+  // same nonexistent /closet path as the old baseUrl did. They're currently
+  // unreachable from the UI - the sidebar's "My Closet" and "Add New Item"
+  // taps both redirect to the real /closet and /upload routes (which use
+  // ClosetService/UploadProvider) instead of the inline _ClosetView/
+  // _AddItemView these methods back. Left as-is rather than guessing at the
+  // real /items create-schema contract for a code path nothing currently
+  // calls; worth deleting alongside _ClosetView/_AddItemView in a follow-up
+  // cleanup rather than maintaining two parallel item-creation paths.
 
   /// Catalog a new item. Returns the saved item, including its server-assigned id.
   static Future<Map<String, dynamic>> addClosetItem(

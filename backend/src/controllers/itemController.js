@@ -2,7 +2,7 @@ import prisma from '../config/database.js';
 import { mapAiAttributesToFlutter, mapAiColorsToFlutter, mapAiHistory, getPrimaryColorName } from '../utils/aiMetadataMapper.js';
 
 // --- DTO Mappers ---
-const mapItemToDto = (item) => {
+export const mapItemToDto = (item) => {
   let badgeStatus = 'Processing';
   if (item.ci_status === 'ACTIVE') {
     const tags = item.closet_item_ai_tags?.ciaitag_tags || {};
@@ -81,14 +81,20 @@ export const uploadItem = async (req, res) => {
     // Construct the local URL for the image
     const imageUrl = `/uploads/${req.file.filename}`;
 
-    // Fetch the first category to use as a placeholder
-    let firstCategory = await prisma.item_categories.findFirst();
-    if (!firstCategory) {
-      firstCategory = await prisma.item_categories.create({
-        data: { itc_name: 'Uncategorized' }
+    // Placeholder category until the worker identifies the real one. This
+    // must be a genuine "not yet known" category, not just whichever row
+    // happens to be first (findFirst() previously returned "Dress" - if the
+    // worker's category match ever fails, e.g. an AI subcategory with no
+    // synonym mapping, the item was silently mislabeled as a dress forever).
+    let placeholderCategory = await prisma.item_categories.findFirst({
+      where: { itc_name: 'Uncategorized' },
+    });
+    if (!placeholderCategory) {
+      placeholderCategory = await prisma.item_categories.create({
+        data: { itc_name: 'Uncategorized' },
       });
     }
-    const categoryId = firstCategory.itc_id;
+    const categoryId = placeholderCategory.itc_id;
 
     const item = await prisma.closet_items.create({
       data: {
@@ -345,7 +351,19 @@ export const updateItem = async (req, res) => {
         currentTags.is_edited = true;
       }
       if (manualColors) {
-        currentTags.ai_colors = { ...currentTags.ai_colors, ...manualColors };
+        // manualColors is the full, ordered list of colors currently shown in
+        // the editor (index 0 = primary, index 1 = secondary). This replaces
+        // ai_colors outright rather than merging by name: the previous code
+        // spread the edit on top of the existing object, so a chip displayed
+        // under a resolved name (e.g. "Khaki") got added as a NEW key
+        // alongside the original "primary_color"/"secondary_color" keys
+        // instead of updating them, leaving stale colors in the stored data
+        // that a later read could resurface.
+        const [primary, secondary] = Array.isArray(manualColors) ? manualColors : [];
+        currentTags.ai_colors = {
+          primary_color: primary ? { hex: primary.hex, name: primary.name } : null,
+          secondary_color: secondary ? { hex: secondary.hex, name: secondary.name } : null,
+        };
         currentTags.is_edited = true;
       }
       

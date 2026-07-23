@@ -50,6 +50,8 @@ app_config.env
 # Environment / secrets
 .env
 *.env
+*.env.bak
+*.env.*
 !.env.example
 
 # Uploaded user content (never commit)
