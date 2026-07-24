@@ -1,13 +1,34 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const multer = require('multer');
 const { initializeApp, cert } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
 const db = require('./db'); // Importing your PostgreSQL connection
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+// Default express.json() caps request bodies at 100kb — way too small
+// for a base64-encoded photo (which runs ~33% larger than the raw file).
+// 12mb comfortably covers a compressed phone photo.
+app.use(express.json({ limit: '12mb' }));
+
+// multer keeps the uploaded photo in memory as a Buffer (no temp files on
+// disk) so /api/closet/analyze can base64-encode it straight away. 10MB
+// cap is generous for a phone photo while blocking anything absurd.
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+});
+
+// Every response here is dynamic, per-user data — never let the browser
+// (or any intermediate cache) serve a stale 304 for it. Without this,
+// Chrome will sometimes revalidate a GET and return 304 Not Modified,
+// which trips up clients that only treat 200 as success.
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
 
 // 1. Initialize Firebase Admin (v14 modular API)
 const serviceAccount = require('./firebase-key.json');
@@ -89,25 +110,60 @@ function serializeItem(row) {
     matchScore: Number(row.ci_match_score),
     isFavorite: row.ci_is_favorite,
     icon: row.ci_icon,
+    // Holds a base64 data URI (data:image/jpeg;base64,...) rather than a
+    // real external URL — see closet_item_images.cii_image_url.
+    imageUrl: row.cii_image_url || null,
   };
 }
 
 const CLOSET_SELECT = `
-  SELECT ci.*, itc.itc_name
+  SELECT ci.*, itc.itc_name, cii.cii_image_url
   FROM closet_items ci
   JOIN item_categories itc ON itc.itc_id = ci.ci_category_id
+  LEFT JOIN closet_item_images cii
+    ON cii.cii_ci_id = ci.ci_id AND cii.cii_is_primary = true
 `;
 
 app.get('/api/dashboard', verifyToken, async (req, res) => {
   try {
-    const userQuery = await db.query('SELECT usr_email FROM users WHERE usr_id = $1', [req.dbUserId]);
+    const userQuery = await db.query(
+      'SELECT usr_email, usr_display_name FROM users WHERE usr_id = $1',
+      [req.dbUserId]
+    );
     if (userQuery.rows.length === 0) {
       return res.status(404).json({ error: 'User profile not found.' });
     }
-    res.json({ message: `Welcome to your dashboard, ${userQuery.rows[0].usr_email}!` });
+    const { usr_email, usr_display_name } = userQuery.rows[0];
+    // Fall back to the email's local part if the user hasn't synced a
+    // display name yet (e.g. account created before this feature shipped).
+    const name = usr_display_name || usr_email.split('@')[0];
+    res.json({ username: name, message: `Welcome to your dashboard, ${name}!` });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error while fetching dashboard.' });
+  }
+});
+
+// POST /api/auth/sync-user — called once right after Firebase signup to
+// save the display name the user typed in the signup form. Auth already
+// happened via verifyToken (which also auto-provisions the users row), so
+// this just fills in the one field Firebase itself doesn't know about.
+app.post('/api/auth/sync-user', verifyToken, async (req, res) => {
+  const { displayName } = req.body;
+
+  if (!displayName || !displayName.trim()) {
+    return res.status(400).json({ error: 'displayName is required.' });
+  }
+
+  try {
+    const result = await db.query(
+      `UPDATE users SET usr_display_name = $1 WHERE usr_id = $2 RETURNING usr_display_name`,
+      [displayName.trim(), req.dbUserId]
+    );
+    res.json({ username: result.rows[0].usr_display_name });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to sync user profile.' });
   }
 });
 
@@ -127,7 +183,7 @@ app.get('/api/closet', verifyToken, async (req, res) => {
 });
 
 app.post('/api/closet', verifyToken, async (req, res) => {
-  const { title, category, brand, color, season, icon, matchScore } = req.body;
+  const { title, category, brand, color, season, icon, matchScore, imageUrl } = req.body;
 
   if (!title || !category) {
     return res.status(400).json({ error: 'title and category are required.' });
@@ -152,12 +208,64 @@ app.post('/api/closet', verifyToken, async (req, res) => {
         matchScore || 80,
       ]
     );
+    const newItemId = insertResult.rows[0].ci_id;
 
-    const fullRow = await db.query(`${CLOSET_SELECT} WHERE ci.ci_id = $1`, [insertResult.rows[0].ci_id]);
+    // imageUrl here is actually a base64 data URI (see closet_item_images
+    // comment above) produced by /api/closet/analyze and passed straight
+    // through by the app once the person taps "Save to Vault".
+    if (imageUrl) {
+      await db.query(
+        `INSERT INTO closet_item_images (cii_ci_id, cii_image_url, cii_is_primary)
+         VALUES ($1, $2, true)`,
+        [newItemId, imageUrl]
+      );
+    }
+
+    const fullRow = await db.query(`${CLOSET_SELECT} WHERE ci.ci_id = $1`, [newItemId]);
     res.status(201).json(serializeItem(fullRow.rows[0]));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to create closet item.' });
+  }
+});
+
+// POST /api/closet/analyze — accepts a multipart photo (field name "image")
+// and returns the extracted item details the Flutter app shows on the
+// "Detected Details" screen before saving. Nothing is written to the
+// database here — the app calls POST /api/closet separately once the
+// person taps "Save to Vault", passing this response straight through.
+//
+// The image itself is base64-encoded and handed back as a data URI in
+// `imageUrl`; the app round-trips that same string to POST /api/closet,
+// which is what actually persists it into closet_item_images.
+//
+// TODO: title/category/brand/color below are placeholders. Wire in the
+// real pipeline here once it's ready:
+//   1. Send the buffer to your Python OpenCV service for color + cropping
+//   2. Send the (cleaned) image to your vision model for title/category/brand
+//   3. Merge both results into the object returned below
+app.post('/api/closet/analyze', verifyToken, upload.single('image'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No image uploaded (expected field "image").' });
+  }
+
+  try {
+    const mimeType = req.file.mimetype || 'image/jpeg';
+    const base64 = req.file.buffer.toString('base64');
+    const imageUrl = `data:${mimeType};base64,${base64}`;
+
+    // Placeholder extraction until the Python/vision pipeline is wired in.
+    res.json({
+      imageUrl,
+      title: 'Untitled Piece',
+      category: 'Garment',
+      brand: 'Unknown',
+      color: '—',
+      season: 'All',
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to analyze image.' });
   }
 });
 
