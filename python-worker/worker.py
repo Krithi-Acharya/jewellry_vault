@@ -2,6 +2,7 @@ import os
 import requests
 import time
 import logging
+import psycopg2
 from PIL import Image, ExifTags
 from config import Config
 from database import Database
@@ -177,8 +178,13 @@ class Worker:
     def run_loop(self):
         logging.info("Starting Python worker polling loop...")
         while True:
-            job = self.db.get_pending_job()
-            if job:
-                self.process_job(job)
-            else:
-                time.sleep(Config.POLL_INTERVAL_SECONDS)
+            try:
+                job = self.db.get_pending_job()
+                if job:
+                    self.process_job(job)
+                else:
+                    time.sleep(Config.POLL_INTERVAL_SECONDS)
+            except psycopg2.OperationalError as e:
+                logging.error(f"Database connection lost: {e}. Reconnecting in 5s...")
+                time.sleep(5)
+                self.db = Database()

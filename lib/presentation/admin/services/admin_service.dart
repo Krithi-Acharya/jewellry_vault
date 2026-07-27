@@ -76,6 +76,21 @@ class AdminService {
     );
   }
 
+  Future<void> updateUser(int userId, Map<String, dynamic> fields) async {
+    await _dio.patch(
+      '${AppConfig.apiBaseUrl}${ApiConstants.adminUsers}/$userId',
+      data: fields,
+      options: await _authOptions(),
+    );
+  }
+
+  Future<void> deleteUser(int userId) async {
+    await _dio.delete(
+      '${AppConfig.apiBaseUrl}${ApiConstants.adminUsers}/$userId',
+      options: await _authOptions(),
+    );
+  }
+
   // ── Items ──────────────────────────────────────────────────────────────
 
   Future<({List<Map<String, dynamic>> items, int totalPages})> fetchItems({

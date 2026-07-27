@@ -702,6 +702,91 @@ class _UsersViewState extends State<_UsersView> {
     }
   }
 
+  Future<void> _editUser(Map<String, dynamic> user) async {
+    final nameCtrl = TextEditingController(text: user['displayName'] as String? ?? '');
+    final phoneCtrl = TextEditingController(text: user['phoneNumber'] as String? ?? '');
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Edit user', style: AppTypography.headingSmall),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(labelText: 'Display name'),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            TextField(
+              controller: phoneCtrl,
+              decoration: const InputDecoration(labelText: 'Phone number'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: AppTypography.labelLarge.copyWith(color: AppColors.mutedText)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryEmerald),
+            child: Text('Save', style: AppTypography.labelLarge.copyWith(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (result != true || !mounted) return;
+    try {
+      await AdminService.instance.updateUser(user['id'] as int, {
+        'displayName': nameCtrl.text.trim(),
+        'phoneNumber': phoneCtrl.text.trim(),
+      });
+      _load(reset: true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not update user: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteUser(Map<String, dynamic> user) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Delete user?', style: AppTypography.headingSmall),
+        content: Text(
+          '${user['email']} and all their closet data will be permanently deleted. This cannot be undone.',
+          style: AppTypography.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: AppTypography.labelLarge.copyWith(color: AppColors.mutedText)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            child: Text('Delete', style: AppTypography.labelLarge.copyWith(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await AdminService.instance.deleteUser(user['id'] as int);
+      _load(reset: true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not delete user: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final filtered = _filtered;
@@ -812,7 +897,12 @@ class _UsersViewState extends State<_UsersView> {
                       ),
                     );
                   }
-                  return _UserCard(user: filtered[i], onToggleRole: () => _toggleRole(filtered[i]));
+                  return _UserCard(
+                    user: filtered[i],
+                    onToggleRole: () => _toggleRole(filtered[i]),
+                    onEdit: () => _editUser(filtered[i]),
+                    onDelete: () => _deleteUser(filtered[i]),
+                  );
                 },
               ),
             ),
@@ -827,8 +917,15 @@ class _UsersViewState extends State<_UsersView> {
 class _UserCard extends StatefulWidget {
   final Map<String, dynamic> user;
   final VoidCallback onToggleRole;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
-  const _UserCard({required this.user, required this.onToggleRole});
+  const _UserCard({
+    required this.user,
+    required this.onToggleRole,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   @override
   State<_UserCard> createState() => _UserCardState();
@@ -969,6 +1066,44 @@ class _UserCardState extends State<_UserCard> {
                   ),
                 ),
               ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: widget.onEdit,
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.border),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.button),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                    ),
+                    child: Text(
+                      'Edit',
+                      style: AppTypography.labelLarge.copyWith(color: AppColors.secondaryText),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: widget.onDelete,
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.error),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.button),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                    ),
+                    child: Text(
+                      'Delete',
+                      style: AppTypography.labelLarge.copyWith(color: AppColors.error),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ],

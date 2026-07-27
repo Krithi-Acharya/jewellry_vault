@@ -7,7 +7,9 @@ try {
   if (fs.existsSync(serviceAccountPath)) {
     const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
     admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
+      // firebase-admin v14 dropped the admin.credential.* namespace; cert()
+      // is now exported directly on the default import.
+      credential: admin.cert(serviceAccount),
     });
     console.log('✅ Firebase Admin initialized');
   } else {

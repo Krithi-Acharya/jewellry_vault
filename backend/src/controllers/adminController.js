@@ -135,6 +135,64 @@ export const updateUserRole = async (req, res) => {
   }
 };
 
+export const updateUser = async (req, res) => {
+  try {
+    const targetId = parseInt(req.params.id);
+    const { displayName, firstName, lastName, phoneNumber } = req.body;
+
+    const target = await prisma.users.findUnique({ where: { usr_id: targetId } });
+    if (!target) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const updated = await prisma.users.update({
+      where: { usr_id: targetId },
+      data: {
+        ...(displayName !== undefined && { usr_display_name: displayName }),
+        ...(firstName !== undefined && { usr_first_name: firstName }),
+        ...(lastName !== undefined && { usr_last_name: lastName }),
+        ...(phoneNumber !== undefined && { usr_phone_number: phoneNumber }),
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        id: updated.usr_id,
+        email: updated.usr_email,
+        phoneNumber: updated.usr_phone_number,
+        displayName: updated.usr_display_name || [updated.usr_first_name, updated.usr_last_name].filter(Boolean).join(' ') || null,
+        role: updated.usr_role,
+      },
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ success: false, message: 'Failed to update user' });
+  }
+};
+
+export const deleteUser = async (req, res) => {
+  try {
+    const targetId = parseInt(req.params.id);
+
+    if (targetId === req.dbUser.usr_id) {
+      return res.status(400).json({ success: false, message: 'You cannot delete your own account' });
+    }
+
+    const target = await prisma.users.findUnique({ where: { usr_id: targetId } });
+    if (!target) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    await prisma.users.delete({ where: { usr_id: targetId } });
+
+    res.status(200).json({ success: true, message: 'User deleted' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete user' });
+  }
+};
+
 // --- Items (across all users) ---
 
 export const getAllItems = async (req, res) => {
@@ -293,15 +351,16 @@ export const getQueue = async (req, res) => {
         ci_is_deleted: false,
         ci_status: { in: ['AI_PROCESSING', 'PENDING'] },
       },
-      orderBy: { ci_created_at: 'asc' },
+      orderBy: { ci_id: 'asc' },
       take: 50,
       include: {
         users: { select: { usr_id: true, usr_email: true } },
+        item_categories: { select: { itc_name: true } },
         closet_item_images: { take: 1 },
         item_upload_jobs: {
           orderBy: { iuj_id: 'desc' },
           take: 1,
-          select: { iuj_status: true, iuj_last_error: true, iuj_retry_count: true },
+          select: { iuj_status: true, iuj_last_error: true, iuj_retry_count: true, iuj_created_at: true },
         },
       },
     });
@@ -310,12 +369,12 @@ export const getQueue = async (req, res) => {
       success: true,
       data: items.map((item) => ({
         id: item.ci_id,
-        displayTitle: item.ci_display_title ?? 'Unnamed item',
+        displayTitle: item.item_categories?.itc_name ?? 'Unnamed item',
         status: item.ci_status,
         ownerEmail: item.users?.usr_email,
         ownerId: item.users?.usr_id,
-        createdAt: item.ci_created_at,
-        thumbnailUrl: item.closet_item_images?.[0]?.cii_image_url ?? null,
+        createdAt: item.item_upload_jobs?.[0]?.iuj_created_at ?? null,
+        thumbnailUrl: item.closet_item_images?.[0]?.cii_url ?? null,
         latestJob: item.item_upload_jobs?.[0] ?? null,
       })),
     });

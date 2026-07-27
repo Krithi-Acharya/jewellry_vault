@@ -4,6 +4,8 @@ import {
   getStats,
   getUsers,
   updateUserRole,
+  updateUser,
+  deleteUser,
   getAllItems,
   adminDeleteItem,
   retryItem,
@@ -21,6 +23,8 @@ router.get('/activity', getActivity);
 router.get('/queue', getQueue);
 router.get('/users', getUsers);
 router.patch('/users/:id/role', updateUserRole);
+router.patch('/users/:id', updateUser);
+router.delete('/users/:id', deleteUser);
 router.get('/items', getAllItems);
 router.delete('/items/:id', adminDeleteItem);
 router.post('/items/:id/retry', retryItem);
