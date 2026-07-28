@@ -2,85 +2,27 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import '../api_service.dart';
 import '../services/auth_service.dart';
+import 'profile_screen.dart';
+import 'prompt_screen.dart';
 
-// ─────────────────────────────────────────────
-//  DESIGN SYSTEM
-// ─────────────────────────────────────────────
+import '../core/theme/app_colors.dart';
+import '../core/theme/app_typography.dart';
+import '../core/theme/app_radius.dart';
+import '../core/theme/app_spacing.dart';
 
-class JewelVaultColors {
-  static const Color background = Color(0xFFF7F3EE);
-  static const Color surface = Color(0xFFFFFFFF);
-  static const Color primaryEmerald = Color(0xFF1B4332);
-  static const Color darkEmerald = Color(0xFF012D1D);
-  static const Color accentGold = Color(0xFFB8976A);
-  static const Color accentGoldLight = Color(0xFFF5ECD9);
-  static const Color border = Color(0xFFE5DDD0);
-  static const Color borderLight = Color(0xFFF0EAE0);
-  static const Color primaryText = Color(0xFF1A1815);
-  static const Color secondaryText = Color(0xFF6B6258);
-  static const Color mutedText = Color(0xFFAA9E94);
-  static const Color tagGarment = Color(0xFFE8F4F0);
-  static const Color tagJewelry = Color(0xFFF5ECD9);
-  static const Color tagAccessory = Color(0xFFF0EBF5);
-  static const Color tagBag = Color(0xFFEFF3FA);
-}
-
-class JewelVaultTypography {
-  static TextStyle display = GoogleFonts.fraunces(
-    fontSize: 36,
-    fontWeight: FontWeight.w600,
-    color: JewelVaultColors.primaryText,
-    height: 1.2,
-  );
-  static TextStyle headingLarge = GoogleFonts.fraunces(
-    fontSize: 28,
-    fontWeight: FontWeight.w500,
-    color: JewelVaultColors.primaryText,
-    height: 1.4,
-  );
-  static TextStyle headingMedium = GoogleFonts.fraunces(
-    fontSize: 22,
-    fontWeight: FontWeight.w500,
-    color: JewelVaultColors.primaryText,
-  );
-  static TextStyle headingSmall = GoogleFonts.fraunces(
-    fontSize: 17,
-    fontWeight: FontWeight.w500,
-    color: JewelVaultColors.primaryText,
-  );
-  static TextStyle bodyLarge = GoogleFonts.inter(
-    fontSize: 16,
-    fontWeight: FontWeight.w300,
-    color: JewelVaultColors.secondaryText,
-    height: 1.6,
-  );
-  static TextStyle bodyMedium = GoogleFonts.inter(
-    fontSize: 14,
-    fontWeight: FontWeight.w400,
-    color: JewelVaultColors.secondaryText,
-    height: 1.6,
-  );
-  static TextStyle labelLarge = GoogleFonts.inter(
-    fontSize: 13,
-    fontWeight: FontWeight.w600,
-    letterSpacing: 0.3,
-    color: JewelVaultColors.primaryText,
-  );
-  static TextStyle labelSmall = GoogleFonts.inter(
-    fontSize: 11,
-    fontWeight: FontWeight.w500,
-    letterSpacing: 0.8,
-    color: JewelVaultColors.mutedText,
-  );
-  static TextStyle mono = GoogleFonts.spaceMono(
-    fontSize: 12,
-    color: JewelVaultColors.secondaryText,
-  );
-}
+// Compatibility aliases: this screen was originally written against a
+// local JewelVaultColors/JewelVaultTypography design system that has since
+// been superseded by the shared AppColors/AppTypography classes in
+// core/theme/. Rather than rewrite every call site, we alias the old names
+// to the new classes so both naming schemes resolve to the same values.
+typedef JewelVaultColors = AppColors;
+typedef JewelVaultTypography = AppTypography;
 
 class JewelVaultEffects {
   // A quiet, warm-tinted shadow (emerald, not grey) so elevated surfaces
@@ -574,7 +516,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
       'icon': Icons.bar_chart_outlined,
       'selectedIcon': Icons.bar_chart,
     },
+    {
+      'title': 'Ask JewelVault',
+      'icon': Icons.auto_awesome_outlined,
+      'selectedIcon': Icons.auto_awesome,
+      // Not a tab in `views` — this pushes PromptScreen instead of
+      // switching _selectedIndex. See _handleNavSelect below.
+      'route': 'prompt',
+    },
   ];
+
+  // Shared by both the desktop sidebar and the mobile drawer: nav items
+  // tagged with a 'route' push a dedicated full-screen page instead of
+  // swapping the embedded tab view.
+  void _handleNavSelect(int index) {
+    final route = _navItems[index]['route'] as String?;
+    if (route == 'prompt') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const PromptScreen()),
+      );
+      return;
+    }
+    setState(() => _selectedIndex = index);
+  }
 
   Future<void> _addItem(ClosetItem item) async {
     try {
@@ -625,11 +590,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (_isLoading) {
       return const Scaffold(
-        backgroundColor: JewelVaultColors.background,
+        backgroundColor: AppColors.background,
         body: Center(
-          child: CircularProgressIndicator(
-            color: JewelVaultColors.primaryEmerald,
-          ),
+          child: CircularProgressIndicator(color: AppColors.primaryEmerald),
         ),
       );
     }
@@ -649,30 +612,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: JewelVaultColors.background,
+      backgroundColor: AppColors.background,
       drawer: !isDesktop
           ? Drawer(
-              backgroundColor: JewelVaultColors.surface,
+              backgroundColor: AppColors.surface,
               child: _SidebarContent(
                 selectedIndex: _selectedIndex,
                 navItems: _navItems,
                 displayName: _displayName,
                 onSelected: (i) {
-                  setState(() => _selectedIndex = i);
                   Navigator.pop(context);
+                  final route = _navItems[i]['route'] as String?;
+                  if (route == 'prompt') {
+                    _handleNavSelect(i);
+                  } else if (i == 1) {
+                    Navigator.pushNamed(context, '/closet');
+                  } else if (i == 3) {
+                    Navigator.pushNamed(context, '/upload');
+                  } else {
+                    setState(() => _selectedIndex = i);
+                  }
                 },
               ),
             )
           : null,
       appBar: !isDesktop
           ? AppBar(
-              backgroundColor: JewelVaultColors.surface,
+              backgroundColor: AppColors.surface,
               surfaceTintColor: Colors.transparent,
               elevation: 0,
               title: _LogoRow(),
-              iconTheme: const IconThemeData(
-                color: JewelVaultColors.primaryEmerald,
-              ),
+              iconTheme: const IconThemeData(color: AppColors.primaryEmerald),
             )
           : null,
       body: Row(
@@ -682,15 +652,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               width: 260,
               child: Container(
                 decoration: const BoxDecoration(
-                  border: Border(
-                    right: BorderSide(color: JewelVaultColors.border),
-                  ),
+                  border: Border(right: BorderSide(color: AppColors.border)),
                 ),
                 child: _SidebarContent(
                   selectedIndex: _selectedIndex,
                   navItems: _navItems,
                   displayName: _displayName,
-                  onSelected: (i) => setState(() => _selectedIndex = i),
+                  onSelected: _handleNavSelect,
                 ),
               ),
             ),
@@ -733,7 +701,7 @@ class _LogoRow extends StatelessWidget {
       Container(
         padding: const EdgeInsets.all(7),
         decoration: BoxDecoration(
-          color: JewelVaultColors.primaryEmerald,
+          color: AppColors.primaryEmerald,
           borderRadius: BorderRadius.circular(9),
         ),
         child: const Icon(
@@ -745,7 +713,7 @@ class _LogoRow extends StatelessWidget {
       const SizedBox(width: 12),
       Text(
         'JewelVault',
-        style: JewelVaultTypography.headingMedium.copyWith(letterSpacing: -0.5),
+        style: AppTypography.headingMedium.copyWith(letterSpacing: -0.5),
       ),
     ],
   );
@@ -837,6 +805,10 @@ class _SidebarContent extends StatelessWidget {
           const SizedBox(height: 16),
           ListTile(
             contentPadding: EdgeInsets.zero,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProfileScreen()),
+            ),
             leading: CircleAvatar(
               radius: 18,
               backgroundColor: JewelVaultColors.accentGoldLight,
@@ -1030,7 +1002,7 @@ class _DashboardView extends StatelessWidget {
                                 label: 'Garments',
                                 value: '$garmentCount',
                                 icon: Icons.checkroom_outlined,
-                                color: JewelVaultColors.tagGarment,
+                                color: AppColors.tagGarment,
                                 onTap: onNavigateToCloset,
                               ),
                             ),
@@ -1044,7 +1016,7 @@ class _DashboardView extends StatelessWidget {
                                 label: 'Jewelry',
                                 value: '$jewelryCount',
                                 icon: Icons.diamond_outlined,
-                                color: JewelVaultColors.tagJewelry,
+                                color: AppColors.tagJewelry,
                                 onTap: onNavigateToCloset,
                               ),
                             ),
@@ -1077,7 +1049,7 @@ class _DashboardView extends StatelessWidget {
                             label: 'Garments',
                             value: '$garmentCount',
                             icon: Icons.checkroom_outlined,
-                            color: JewelVaultColors.tagGarment,
+                            color: AppColors.tagGarment,
                             onTap: onNavigateToCloset,
                           ),
                         ),
@@ -1087,7 +1059,7 @@ class _DashboardView extends StatelessWidget {
                             label: 'Jewelry',
                             value: '$jewelryCount',
                             icon: Icons.diamond_outlined,
-                            color: JewelVaultColors.tagJewelry,
+                            color: AppColors.tagJewelry,
                             onTap: onNavigateToCloset,
                           ),
                         ),
@@ -1150,7 +1122,7 @@ class _DashboardView extends StatelessWidget {
           const SizedBox(height: 32),
 
           // ── SEASON BREAKDOWN ─────────────────────────────────
-          Text('By Season', style: JewelVaultTypography.headingSmall),
+          Text('By Season', style: AppTypography.headingSmall),
           const SizedBox(height: 16),
           _SeasonBreakdown(items: items),
         ],
@@ -1176,7 +1148,7 @@ class _QuickActionButton extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: JewelVaultColors.primaryEmerald,
+        color: AppColors.primaryEmerald,
         borderRadius: BorderRadius.circular(12),
         boxShadow: JewelVaultEffects.raised,
       ),
@@ -1187,9 +1159,7 @@ class _QuickActionButton extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             label,
-            style: JewelVaultTypography.labelLarge.copyWith(
-              color: Colors.white,
-            ),
+            style: AppTypography.labelLarge.copyWith(color: Colors.white),
           ),
         ],
       ),
@@ -1208,7 +1178,7 @@ class _StatCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.icon,
-    this.color = JewelVaultColors.surface,
+    this.color = AppColors.surface,
     required this.onTap,
   });
 
@@ -1218,7 +1188,7 @@ class _StatCard extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: JewelVaultColors.surface,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: JewelVaultColors.border),
         boxShadow: JewelVaultEffects.card,
@@ -1229,22 +1199,149 @@ class _StatCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color == JewelVaultColors.surface
-                  ? JewelVaultColors.background
-                  : color,
+              color: color == AppColors.surface ? AppColors.background : color,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, size: 18, color: JewelVaultColors.primaryEmerald),
+            child: Icon(icon, size: 18, color: AppColors.primaryEmerald),
           ),
           const SizedBox(height: 16),
-          Text(
-            value,
-            style: JewelVaultTypography.display.copyWith(fontSize: 28),
-          ),
+          Text(value, style: AppTypography.display.copyWith(fontSize: 28)),
           const SizedBox(height: 4),
-          Text(label, style: JewelVaultTypography.bodyMedium),
+          Text(label, style: AppTypography.bodyMedium),
         ],
       ),
+    ),
+  );
+}
+
+class _AISuggestionCard extends StatelessWidget {
+  final ClosetItem? pairA;
+  final ClosetItem? pairB;
+  final VoidCallback onTap;
+
+  const _AISuggestionCard({this.pairA, this.pairB, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(24),
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        colors: [Color(0xFF1B4332), Color(0xFF2D6A4F)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.auto_awesome,
+                color: Colors.white,
+                size: 16,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'AI PAIR OF THE DAY',
+              style: AppTypography.labelSmall.copyWith(
+                color: Colors.white70,
+                letterSpacing: 1.5,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        if (pairA != null && pairB != null) ...[
+          Row(
+            children: [
+              _PairChip(item: pairA!),
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.accentGold.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '+',
+                  style: AppTypography.labelLarge.copyWith(color: Colors.white),
+                ),
+              ),
+              const SizedBox(width: 10),
+              _PairChip(item: pairB!),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            '"${pairA!.title}" pairs beautifully with "${pairB!.title}" — a ${pairA!.matchScore.toInt()}% aesthetic match for a refined, effortless look.',
+            style: AppTypography.bodyMedium.copyWith(
+              color: Colors.white.withOpacity(0.8),
+              height: 1.6,
+            ),
+          ),
+        ],
+        const SizedBox(height: 20),
+        GestureDetector(
+          onTap: onTap,
+          child: Row(
+            children: [
+              Text(
+                'See all outfit ideas',
+                style: AppTypography.labelLarge.copyWith(
+                  color: AppColors.accentGold,
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(
+                Icons.arrow_forward,
+                color: AppColors.accentGold,
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _PairChip extends StatelessWidget {
+  final ClosetItem item;
+  const _PairChip({required this.item});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+    decoration: BoxDecoration(
+      color: Colors.white.withOpacity(0.12),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: Colors.white.withOpacity(0.2)),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(item.icon, color: Colors.white, size: 16),
+        const SizedBox(width: 8),
+        Text(
+          item.title,
+          style: AppTypography.labelLarge.copyWith(
+            color: Colors.white,
+            fontSize: 12,
+          ),
+        ),
+      ],
     ),
   );
 }
@@ -1259,7 +1356,7 @@ class _RecentlyAddedCard extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(24),
     decoration: BoxDecoration(
-      color: JewelVaultColors.surface,
+      color: AppColors.surface,
       borderRadius: BorderRadius.circular(20),
       border: Border.all(color: JewelVaultColors.border),
       boxShadow: JewelVaultEffects.card,
@@ -1270,13 +1367,13 @@ class _RecentlyAddedCard extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Recently Added', style: JewelVaultTypography.headingSmall),
+            Text('Recently Added', style: AppTypography.headingSmall),
             GestureDetector(
               onTap: onViewAll,
               child: Text(
                 'View All',
-                style: JewelVaultTypography.labelSmall.copyWith(
-                  color: JewelVaultColors.primaryEmerald,
+                style: AppTypography.labelSmall.copyWith(
+                  color: AppColors.primaryEmerald,
                 ),
               ),
             ),
@@ -1305,15 +1402,13 @@ class _RecentlyAddedCard extends StatelessWidget {
                     children: [
                       Text(
                         item.title,
-                        style: JewelVaultTypography.labelLarge,
+                        style: AppTypography.labelLarge,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
                         item.brand,
-                        style: JewelVaultTypography.bodyMedium.copyWith(
-                          fontSize: 11,
-                        ),
+                        style: AppTypography.bodyMedium.copyWith(fontSize: 11),
                       ),
                     ],
                   ),
@@ -1412,7 +1507,7 @@ class _InsightTile extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
-      color: JewelVaultColors.surface,
+      color: AppColors.surface,
       borderRadius: BorderRadius.circular(16),
       border: Border.all(color: JewelVaultColors.border),
       boxShadow: JewelVaultEffects.card,
@@ -1425,7 +1520,7 @@ class _InsightTile extends StatelessWidget {
             color: color,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, size: 20, color: JewelVaultColors.primaryEmerald),
+          child: Icon(icon, size: 20, color: AppColors.primaryEmerald),
         ),
         const SizedBox(width: 14),
         Expanded(
@@ -1434,21 +1529,16 @@ class _InsightTile extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: JewelVaultTypography.labelSmall.copyWith(
-                  letterSpacing: 0.8,
-                ),
+                style: AppTypography.labelSmall.copyWith(letterSpacing: 0.8),
               ),
               const SizedBox(height: 3),
               Text(
                 value,
-                style: JewelVaultTypography.labelLarge,
+                style: AppTypography.labelLarge,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              Text(
-                sub,
-                style: JewelVaultTypography.bodyMedium.copyWith(fontSize: 11),
-              ),
+              Text(sub, style: AppTypography.bodyMedium.copyWith(fontSize: 11)),
             ],
           ),
         ),
@@ -1472,7 +1562,7 @@ class _SeasonBreakdown extends StatelessWidget {
             margin: const EdgeInsets.only(right: 10),
             padding: const EdgeInsets.symmetric(vertical: 16),
             decoration: BoxDecoration(
-              color: JewelVaultColors.surface,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: JewelVaultColors.border),
               boxShadow: JewelVaultEffects.card,
@@ -1481,11 +1571,8 @@ class _SeasonBreakdown extends StatelessWidget {
               children: [
                 Text(_seasonEmoji(s), style: const TextStyle(fontSize: 20)),
                 const SizedBox(height: 8),
-                Text('$count', style: JewelVaultTypography.headingSmall),
-                Text(
-                  s,
-                  style: JewelVaultTypography.bodyMedium.copyWith(fontSize: 11),
-                ),
+                Text('$count', style: AppTypography.headingSmall),
+                Text(s, style: AppTypography.bodyMedium.copyWith(fontSize: 11)),
               ],
             ),
           ),
@@ -2174,13 +2261,10 @@ class _ClosetViewState extends State<_ClosetView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'My Vault Closet',
-                      style: JewelVaultTypography.headingLarge,
-                    ),
+                    Text('My Vault Closet', style: AppTypography.headingLarge),
                     Text(
                       '${filtered.length} of ${widget.items.length} pieces',
-                      style: JewelVaultTypography.bodyMedium,
+                      style: AppTypography.bodyMedium,
                     ),
                   ],
                 ),
@@ -2192,15 +2276,15 @@ class _ClosetViewState extends State<_ClosetView> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: JewelVaultColors.surface,
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: JewelVaultColors.border),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: DropdownButton<String>(
                   value: _sortBy,
                   isDense: true,
                   underline: const SizedBox(),
-                  style: JewelVaultTypography.labelLarge,
+                  style: AppTypography.labelLarge,
                   items: ['Match', 'Worn', 'Name']
                       .map(
                         (s) =>
@@ -2221,28 +2305,26 @@ class _ClosetViewState extends State<_ClosetView> {
             onChanged: (v) => setState(() => _searchQuery = v),
             decoration: InputDecoration(
               hintText: 'Search by name or brand…',
-              hintStyle: JewelVaultTypography.bodyMedium,
+              hintStyle: AppTypography.bodyMedium,
               prefixIcon: const Icon(
                 Icons.search,
-                color: JewelVaultColors.mutedText,
+                color: AppColors.mutedText,
                 size: 20,
               ),
               filled: true,
-              fillColor: JewelVaultColors.surface,
+              fillColor: AppColors.surface,
               contentPadding: const EdgeInsets.symmetric(vertical: 14),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: JewelVaultColors.border),
+                borderSide: const BorderSide(color: AppColors.border),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: JewelVaultColors.border),
+                borderSide: const BorderSide(color: AppColors.border),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: JewelVaultColors.primaryEmerald,
-                ),
+                borderSide: const BorderSide(color: AppColors.primaryEmerald),
               ),
             ),
           ),
@@ -2267,21 +2349,21 @@ class _ClosetViewState extends State<_ClosetView> {
                     ),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? JewelVaultColors.primaryEmerald
-                          : JewelVaultColors.surface,
+                          ? AppColors.primaryEmerald
+                          : AppColors.surface,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: isSelected
-                            ? JewelVaultColors.primaryEmerald
-                            : JewelVaultColors.border,
+                            ? AppColors.primaryEmerald
+                            : AppColors.border,
                       ),
                     ),
                     child: Text(
                       cat,
-                      style: JewelVaultTypography.labelLarge.copyWith(
+                      style: AppTypography.labelLarge.copyWith(
                         color: isSelected
                             ? Colors.white
-                            : JewelVaultColors.secondaryText,
+                            : AppColors.secondaryText,
                         fontSize: 12,
                       ),
                     ),
@@ -2301,16 +2383,12 @@ class _ClosetViewState extends State<_ClosetView> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.search_off,
-                        color: JewelVaultColors.border,
-                        size: 48,
-                      ),
+                      Icon(Icons.search_off, color: AppColors.border, size: 48),
                       const SizedBox(height: 12),
                       Text(
                         'No items found',
-                        style: JewelVaultTypography.headingSmall.copyWith(
-                          color: JewelVaultColors.mutedText,
+                        style: AppTypography.headingSmall.copyWith(
+                          color: AppColors.mutedText,
                         ),
                       ),
                     ],
@@ -2549,9 +2627,9 @@ class _CategoryTag extends StatelessWidget {
     ),
     child: Text(
       category,
-      style: JewelVaultTypography.labelSmall.copyWith(
+      style: AppTypography.labelSmall.copyWith(
         fontSize: 9,
-        color: JewelVaultColors.primaryEmerald,
+        color: AppColors.primaryEmerald,
         letterSpacing: 0.5,
       ),
     ),
@@ -2561,13 +2639,13 @@ class _CategoryTag extends StatelessWidget {
 Color _categoryColor(String cat) {
   switch (cat) {
     case 'Jewelry':
-      return JewelVaultColors.tagJewelry;
+      return AppColors.tagJewelry;
     case 'Bag':
-      return JewelVaultColors.tagBag;
+      return AppColors.tagBag;
     case 'Accessory':
-      return JewelVaultColors.tagAccessory;
+      return AppColors.tagAccessory;
     default:
-      return JewelVaultColors.tagGarment;
+      return AppColors.tagGarment;
   }
 }
 
@@ -3272,19 +3350,43 @@ class _OutfitsView extends StatefulWidget {
 }
 
 class _OutfitsViewState extends State<_OutfitsView> {
+  // ── Saved lookbook ──
   List<Map<String, dynamic>> _looks = [];
   bool _isLoadingLooks = true;
 
-  final ImagePicker _picker = ImagePicker();
-  XFile? _pickedImage;
-  Uint8List? _previewBytes;
-  bool _isSending = false;
-  String? _error;
+  // ── Builder state ──
+  bool _isBuilding = false;
+  final TextEditingController _nameController = TextEditingController();
+  String _season = 'All';
+  String _occasion = 'Casual';
+  final Set<String> _tags = {};
+  List<_CanvasPiece> _pieces = [];
+  int? _selectedIndex;
+  bool _isSaving = false;
+  bool _isFavoriteDraft = false;
+  String? _saveError;
+  final GlobalKey _canvasKey = GlobalKey();
+
+  // ── Wardrobe search / filter ──
+  String _search = '';
+  String _group = 'All';
+  bool _favoritesOnly = false;
+
+  // Fixed logical size the outfit board is laid out against. The board is
+  // rendered inside a FittedBox so it scales down gracefully on narrow
+  // screens without any of the placement math below needing to change.
+  static const Size _canvasSize = Size(520, 650);
 
   @override
   void initState() {
     super.initState();
     _loadLooks();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadLooks() async {
@@ -3297,104 +3399,217 @@ class _OutfitsViewState extends State<_OutfitsView> {
       });
     } catch (e) {
       // Backend not reachable, or no looks endpoint yet — just show the
-      // upload flow with an empty My Looks section.
+      // builder with an empty saved lookbook.
       if (!mounted) return;
       setState(() => _isLoadingLooks = false);
     }
   }
 
-  Future<void> _pickImage(ImageSource source) async {
-    try {
-      final file = await _picker.pickImage(source: source, imageQuality: 85);
-      if (file == null) return;
-      final bytes = await file.readAsBytes();
-      setState(() {
-        _pickedImage = file;
-        _previewBytes = bytes;
-        _error = null;
-      });
-    } catch (e) {
-      setState(
-        () => _error = "Couldn't open the camera/gallery. Please try again.",
-      );
-    }
+  // ── Wardrobe filtering ──
+
+  List<ClosetItem> get _filteredWardrobe {
+    return widget.items.where((item) {
+      final q = _search.toLowerCase();
+      final matchesSearch =
+          _search.isEmpty ||
+          item.title.toLowerCase().contains(q) ||
+          item.brand.toLowerCase().contains(q) ||
+          item.color.toLowerCase().contains(q);
+      final matchesGroup = _group == 'All' || _wardrobeGroup(item) == _group;
+      final matchesFav = !_favoritesOnly || item.isFavorite;
+      return matchesSearch && matchesGroup && matchesFav;
+    }).toList();
   }
 
-  void _showSourcePicker() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: JewelVaultColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(
-                  Icons.photo_camera_outlined,
-                  color: JewelVaultColors.primaryEmerald,
-                ),
-                title: Text(
-                  'Take Photo',
-                  style: JewelVaultTypography.labelLarge,
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _pickImage(ImageSource.camera);
-                },
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.photo_library_outlined,
-                  color: JewelVaultColors.primaryEmerald,
-                ),
-                title: Text(
-                  'Choose from Device',
-                  style: JewelVaultTypography.labelLarge,
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _pickImage(ImageSource.gallery);
-                },
-              ),
-            ],
-          ),
-        ),
+  bool _isItemInCanvas(String id) => _pieces.any((p) => p.item.id == id);
+
+  // ── Builder lifecycle ──
+
+  void _startBuilding() => setState(() => _isBuilding = true);
+
+  void _cancelBuilding() {
+    setState(() {
+      _isBuilding = false;
+      _pieces = [];
+      _selectedIndex = null;
+      _saveError = null;
+      _isFavoriteDraft = false;
+      _nameController.clear();
+      _season = 'All';
+      _occasion = 'Casual';
+      _tags.clear();
+    });
+  }
+
+  // Recomputes every piece's slot position from scratch, but preserves any
+  // manual scale/rotation tweaks for items that were already on the board —
+  // so adding or removing a piece re-balances the layout without discarding
+  // the user's styling adjustments.
+  void _syncPiecesWithSelection(List<ClosetItem> selectedItems) {
+    final recomputed = _autoArrangePieces(selectedItems, _canvasSize);
+    for (final piece in recomputed) {
+      final prevMatches = _pieces.where((p) => p.item.id == piece.item.id);
+      if (prevMatches.isNotEmpty) {
+        piece.scale = prevMatches.first.scale;
+        piece.rotation = prevMatches.first.rotation;
+      }
+    }
+    _pieces = recomputed;
+  }
+
+  void _toggleItemInCanvas(ClosetItem item) {
+    setState(() {
+      final currentItems = _pieces.map((p) => p.item).toList();
+      final idx = currentItems.indexWhere((i) => i.id == item.id);
+      if (idx >= 0) {
+        currentItems.removeAt(idx);
+      } else {
+        currentItems.add(item);
+      }
+      _syncPiecesWithSelection(currentItems);
+      _selectedIndex = null;
+    });
+  }
+
+  void _removePiece(int index) {
+    setState(() {
+      final currentItems = _pieces.map((p) => p.item).toList()..removeAt(index);
+      _syncPiecesWithSelection(currentItems);
+      _selectedIndex = null;
+    });
+  }
+
+  void _duplicatePiece(int index) {
+    setState(() {
+      final src = _pieces[index];
+      final copy = _CanvasPiece(
+        item: src.item,
+        position: src.position + const Offset(16, 16),
+        scale: src.scale,
+        rotation: src.rotation,
+        widthFrac: src.widthFrac,
+        heightFrac: src.heightFrac,
+      );
+      _pieces.add(copy);
+      _selectedIndex = _pieces.length - 1;
+    });
+  }
+
+  void _bringForward(int index) {
+    if (index >= _pieces.length - 1) return;
+    setState(() {
+      final p = _pieces.removeAt(index);
+      _pieces.insert(index + 1, p);
+      _selectedIndex = index + 1;
+    });
+  }
+
+  void _sendBackward(int index) {
+    if (index <= 0) return;
+    setState(() {
+      final p = _pieces.removeAt(index);
+      _pieces.insert(index - 1, p);
+      _selectedIndex = index - 1;
+    });
+  }
+
+  void _adjustSelected({double scaleDelta = 0, double rotationDelta = 0}) {
+    if (_selectedIndex == null) return;
+    setState(() {
+      final p = _pieces[_selectedIndex!];
+      p.scale = (p.scale + scaleDelta).clamp(0.4, 2.5);
+      p.rotation += rotationDelta;
+    });
+  }
+
+  void _resetSelected() {
+    if (_selectedIndex == null) return;
+    setState(() {
+      final piece = _pieces[_selectedIndex!];
+      final slot = _slotForItem(piece.item);
+      final anchor = _slotAnchorFrac[slot] ?? const Offset(0.5, 0.5);
+      piece.position = Offset(
+        anchor.dx * _canvasSize.width,
+        anchor.dy * _canvasSize.height,
+      );
+      piece.scale = 1.0;
+      piece.rotation = 0.0;
+    });
+  }
+
+  void _autoArrangeAll() {
+    setState(() {
+      _pieces = _autoArrangePieces(
+        _pieces.map((p) => p.item).toList(),
+        _canvasSize,
+      );
+      _selectedIndex = null;
+    });
+  }
+
+  Future<void> _shareOutfit() async {
+    final name = _nameController.text.trim().isEmpty
+        ? 'Untitled Look'
+        : _nameController.text.trim();
+    final pieceNames = _pieces.map((p) => p.item.title).join(', ');
+    await Clipboard.setData(ClipboardData(text: '$name — $pieceNames'));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Outfit summary copied — paste it anywhere to share.'),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
-  // Discards the picked photo and returns to the empty upload state.
-  void _unsend() {
+  // Renders the current board to a PNG and sends it through the existing
+  // single-photo outfit endpoint, so the backend contract stays untouched
+  // while the person still gets to compose the look piece by piece.
+  Future<void> _saveOutfit() async {
+    if (_pieces.isEmpty) {
+      setState(
+        () => _saveError = 'Add at least one item to your outfit first.',
+      );
+      return;
+    }
     setState(() {
-      _pickedImage = null;
-      _previewBytes = null;
-      _error = null;
-    });
-  }
-
-  Future<void> _send() async {
-    if (_pickedImage == null || _isSending) return;
-    setState(() {
-      _isSending = true;
-      _error = null;
+      _isSaving = true;
+      _saveError = null;
     });
     try {
-      final outfit = await ApiService.createOutfitFromPhoto(_pickedImage!);
+      final boundary =
+          _canvasKey.currentContext!.findRenderObject()
+              as RenderRepaintBoundary;
+      final rendered = await boundary.toImage(pixelRatio: 2.0);
+      final byteData = await rendered.toByteData(format: ImageByteFormat.png);
+      final bytes = byteData!.buffer.asUint8List();
+      final xfile = XFile.fromData(
+        bytes,
+        name: 'outfit-${DateTime.now().millisecondsSinceEpoch}.png',
+        mimeType: 'image/png',
+      );
+      final outfit = await ApiService.createOutfitFromPhoto(xfile);
       if (!mounted) return;
+      final enriched = {
+        ...outfit,
+        'name': _nameController.text.trim().isEmpty
+            ? 'Untitled Look'
+            : _nameController.text.trim(),
+        'season': _season,
+        'occasion': _occasion,
+        'tags': _tags.toList(),
+        'itemIds': _pieces.map((p) => p.item.id).toList(),
+        'createdAt': DateTime.now().toIso8601String(),
+        'isFavorite': _isFavoriteDraft,
+      };
       setState(() {
-        _looks = [outfit, ..._looks];
-        _pickedImage = null;
-        _previewBytes = null;
-        _isSending = false;
+        _looks = [enriched, ..._looks];
+        _isSaving = false;
       });
+      _cancelBuilding();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Outfit sent to your lookbook.'),
+          content: Text('Outfit saved to your lookbook.'),
           backgroundColor: JewelVaultColors.primaryEmerald,
           behavior: SnackBarBehavior.floating,
         ),
@@ -3402,180 +3617,793 @@ class _OutfitsViewState extends State<_OutfitsView> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _isSending = false;
-        _error =
-            "Couldn't send that outfit — check your connection and try again.";
+        _isSaving = false;
+        _saveError =
+            "Couldn't save that outfit — check your connection and try again.";
       });
     }
   }
+
+  // ── Saved-look actions (local only — no update/delete endpoint exists
+  // yet, so these affect this session's view of the lookbook) ──
+
+  void _toggleFavoriteLook(int index) {
+    setState(() {
+      final look = Map<String, dynamic>.from(_looks[index]);
+      look['isFavorite'] = !(look['isFavorite'] == true);
+      _looks[index] = look;
+    });
+  }
+
+  void _confirmDeleteLook(int index) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: JewelVaultColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text('Delete outfit?', style: JewelVaultTypography.headingSmall),
+        content: Text(
+          'This removes it from your lookbook.',
+          style: JewelVaultTypography.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              setState(() => _looks.removeAt(index));
+            },
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _editLook(Map<String, dynamic> look) {
+    final ids = (look['itemIds'] as List?)?.cast<String>() ?? const [];
+    final matchedItems = ids
+        .map((id) => widget.items.where((e) => e.id == id))
+        .where((matches) => matches.isNotEmpty)
+        .map((matches) => matches.first)
+        .toList();
+    if (matchedItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("This look doesn't have editable pieces."),
+        ),
+      );
+      return;
+    }
+    setState(() {
+      _isBuilding = true;
+      _nameController.text = (look['name'] as String?) ?? '';
+      _season = (look['season'] as String?) ?? 'All';
+      _occasion = (look['occasion'] as String?) ?? 'Casual';
+      _isFavoriteDraft = look['isFavorite'] == true;
+      _tags
+        ..clear()
+        ..addAll(((look['tags'] as List?)?.cast<String>()) ?? const []);
+      _syncPiecesWithSelection(matchedItems);
+      _selectedIndex = null;
+    });
+  }
+
+  // ── UI ──
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(28),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Outfit Lookbook', style: JewelVaultTypography.headingLarge),
-            Text(
-              'Snap a look you\u2019ve put together and send it to your lookbook.',
-              style: JewelVaultTypography.bodyMedium,
-            ),
-            const SizedBox(height: 28),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: _isBuilding ? 1180 : 560),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Outfit Lookbook', style: JewelVaultTypography.headingLarge),
+              const SizedBox(height: 4),
+              Text(
+                _isBuilding
+                    ? 'Build your look, piece by piece.'
+                    : 'Curate outfits from your wardrobe, like a digital moodboard.',
+                style: JewelVaultTypography.bodyMedium,
+              ),
+              const SizedBox(height: 28),
 
-            if (_isLoadingLooks)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Center(
-                  child: CircularProgressIndicator(
-                    color: JewelVaultColors.primaryEmerald,
+              AnimatedSize(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                alignment: Alignment.topCenter,
+                child: _isBuilding ? _buildBuilder(context) : _buildCreateCta(),
+              ),
+              const SizedBox(height: 36),
+
+              if (_isLoadingLooks)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: JewelVaultColors.primaryEmerald,
+                    ),
+                  ),
+                )
+              else if (_looks.isNotEmpty) ...[
+                Text(
+                  'Saved Lookbook',
+                  style: JewelVaultTypography.headingSmall,
+                ),
+                const SizedBox(height: 16),
+                _LooksGrid(
+                  looks: _looks,
+                  items: widget.items,
+                  onFavorite: _toggleFavoriteLook,
+                  onDelete: _confirmDeleteLook,
+                  onEdit: _editLook,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCreateCta() {
+    return Container(
+      key: const ValueKey('cta'),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+      decoration: BoxDecoration(
+        color: JewelVaultColors.surface,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: JewelVaultColors.border),
+        boxShadow: JewelVaultEffects.card,
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: const BoxDecoration(
+              color: JewelVaultColors.accentGoldLight,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.checkroom_outlined,
+              color: JewelVaultColors.accentGold,
+              size: 30,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text('Design a new look', style: JewelVaultTypography.headingSmall),
+          const SizedBox(height: 6),
+          Text(
+            'Pick pieces from your wardrobe and arrange them on a styling board.',
+            textAlign: TextAlign.center,
+            style: JewelVaultTypography.bodyMedium.copyWith(fontSize: 12),
+          ),
+          const SizedBox(height: 22),
+          ElevatedButton.icon(
+            onPressed: _startBuilding,
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Create Outfit'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: JewelVaultColors.primaryEmerald,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              textStyle: JewelVaultTypography.labelLarge,
+              elevation: 0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBuilder(BuildContext context) {
+    return Column(
+      key: const ValueKey('builder'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildOutfitMeta(),
+        const SizedBox(height: 20),
+        LayoutBuilder(
+          builder: (ctx, constraints) {
+            final wide = constraints.maxWidth > 860;
+            final wardrobe = _buildWardrobePanel();
+            final canvas = _buildCanvasPanel();
+            if (wide) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(width: 340, child: wardrobe),
+                  const SizedBox(width: 24),
+                  Expanded(child: canvas),
+                ],
+              );
+            }
+            return Column(
+              children: [wardrobe, const SizedBox(height: 24), canvas],
+            );
+          },
+        ),
+        const SizedBox(height: 20),
+        _buildToolbar(),
+        if (_saveError != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF0F0),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  color: Colors.redAccent,
+                  size: 18,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    _saveError!,
+                    style: JewelVaultTypography.bodyMedium.copyWith(
+                      fontSize: 12,
+                    ),
                   ),
                 ),
-              )
-            else if (_looks.isNotEmpty) ...[
-              Text('My Looks', style: JewelVaultTypography.headingSmall),
-              const SizedBox(height: 16),
-              _LooksGrid(looks: _looks, items: widget.items),
-              const SizedBox(height: 32),
-            ],
-
-            Text('Add New Outfit', style: JewelVaultTypography.headingSmall),
-            const SizedBox(height: 16),
-
-            // Upload / preview area
-            GestureDetector(
-              onTap: _pickedImage == null ? _showSourcePicker : null,
-              child: Container(
-                width: double.infinity,
-                height: 320,
-                decoration: BoxDecoration(
-                  color: JewelVaultColors.surface,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: JewelVaultColors.border),
-                  boxShadow: JewelVaultEffects.card,
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: _previewBytes == null
-                    ? Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: const BoxDecoration(
-                              color: JewelVaultColors.accentGoldLight,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.cloud_upload_outlined,
-                              color: JewelVaultColors.accentGold,
-                              size: 28,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          Text(
-                            'Upload Photo',
-                            style: JewelVaultTypography.labelLarge,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Tap to take a photo or choose one from your device',
-                            style: JewelVaultTypography.bodyMedium.copyWith(
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      )
-                    : Image.memory(
-                        _previewBytes!,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                      ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 10),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton(
+            onPressed: _isSaving ? null : _cancelBuilding,
+            child: Text(
+              'Cancel',
+              style: JewelVaultTypography.labelLarge.copyWith(
+                color: JewelVaultColors.mutedText,
               ),
             ),
+          ),
+        ),
+      ],
+    );
+  }
 
-            if (_error != null) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF0F0),
-                  borderRadius: BorderRadius.circular(12),
+  Widget _buildOutfitMeta() {
+    const seasons = ['All', 'Spring', 'Summer', 'Autumn', 'Winter'];
+    const occasions = [
+      'Casual',
+      'Office',
+      'Party',
+      'Wedding',
+      'Traditional',
+      'Vacation',
+    ];
+    const tagOptions = [
+      'Casual',
+      'Wedding',
+      'Party',
+      'Office',
+      'Traditional',
+      'Vacation',
+      'Date Night',
+      'Weekend',
+    ];
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: JewelVaultColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: JewelVaultColors.border),
+        boxShadow: JewelVaultEffects.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _nameController,
+            style: JewelVaultTypography.headingSmall,
+            decoration: InputDecoration(
+              hintText: 'Outfit name…',
+              hintStyle: JewelVaultTypography.bodyMedium,
+              border: InputBorder.none,
+              isDense: true,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Divider(height: 1, color: JewelVaultColors.borderLight),
+          const SizedBox(height: 16),
+          Text(
+            'SEASON',
+            style: JewelVaultTypography.labelSmall.copyWith(letterSpacing: 1),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: seasons
+                .map(
+                  (s) => _chip(
+                    label: s,
+                    selected: _season == s,
+                    onTap: () => setState(() => _season = s),
+                  ),
+                )
+                .toList(),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'OCCASION',
+            style: JewelVaultTypography.labelSmall.copyWith(letterSpacing: 1),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: occasions
+                .map(
+                  (o) => _chip(
+                    label: o,
+                    selected: _occasion == o,
+                    onTap: () => setState(() => _occasion = o),
+                  ),
+                )
+                .toList(),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'TAGS',
+            style: JewelVaultTypography.labelSmall.copyWith(letterSpacing: 1),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: tagOptions.map((t) {
+              final sel = _tags.contains(t);
+              return _chip(
+                label: t,
+                selected: sel,
+                onTap: () =>
+                    setState(() => sel ? _tags.remove(t) : _tags.add(t)),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _chip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected
+              ? JewelVaultColors.primaryEmerald
+              : const Color(0xFFF6F1EA),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected
+                ? JewelVaultColors.primaryEmerald
+                : JewelVaultColors.border,
+          ),
+        ),
+        child: Text(
+          label,
+          style: JewelVaultTypography.labelLarge.copyWith(
+            fontSize: 12,
+            color: selected ? Colors.white : JewelVaultColors.secondaryText,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWardrobePanel() {
+    final filtered = _filteredWardrobe;
+    const groups = [
+      'All',
+      'Tops',
+      'Bottoms',
+      'Shoes',
+      'Jewelry',
+      'Bags',
+      'Accessories',
+    ];
+    return Container(
+      height: 560,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: JewelVaultColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: JewelVaultColors.border),
+        boxShadow: JewelVaultEffects.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text('Wardrobe', style: JewelVaultTypography.headingSmall),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => setState(() => _favoritesOnly = !_favoritesOnly),
+                child: Icon(
+                  _favoritesOnly ? Icons.favorite : Icons.favorite_border,
+                  size: 18,
+                  color: _favoritesOnly
+                      ? Colors.redAccent
+                      : JewelVaultColors.mutedText,
                 ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: Colors.redAccent,
-                      size: 18,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            onChanged: (v) => setState(() => _search = v),
+            decoration: InputDecoration(
+              hintText: 'Search pieces…',
+              hintStyle: JewelVaultTypography.bodyMedium,
+              prefixIcon: const Icon(
+                Icons.search,
+                size: 18,
+                color: JewelVaultColors.mutedText,
+              ),
+              filled: true,
+              fillColor: const Color(0xFFF6F1EA),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: groups
+                  .map(
+                    (g) => Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: _chip(
+                        label: g,
+                        selected: _group == g,
+                        onTap: () => setState(() => _group = g),
+                      ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        _error!,
+                  )
+                  .toList(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: filtered.isEmpty
+                ? Center(
+                    child: Text(
+                      'No pieces match',
+                      style: JewelVaultTypography.bodyMedium.copyWith(
+                        color: JewelVaultColors.mutedText,
+                      ),
+                    ),
+                  )
+                : GridView.builder(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                          childAspectRatio: 0.68,
+                        ),
+                    itemCount: filtered.length,
+                    itemBuilder: (ctx, i) {
+                      final item = filtered[i];
+                      return _WardrobeItemCard(
+                        item: item,
+                        isAdded: _isItemInCanvas(item.id),
+                        onAdd: () => _toggleItemInCanvas(item),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCanvasPanel() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Outfit Canvas', style: JewelVaultTypography.headingSmall),
+        const SizedBox(height: 12),
+        Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: _canvasSize.width),
+            child: AspectRatio(
+              aspectRatio: _canvasSize.width / _canvasSize.height,
+              child: FittedBox(
+                fit: BoxFit.contain,
+                child: SizedBox(
+                  width: _canvasSize.width,
+                  height: _canvasSize.height,
+                  child: _buildCanvas(),
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (_selectedIndex != null) ...[
+          const SizedBox(height: 14),
+          _buildSelectedPieceToolbar(),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildCanvas() {
+    return GestureDetector(
+      onTap: () => setState(() => _selectedIndex = null),
+      child: RepaintBoundary(
+        key: _canvasKey,
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFFAF7F2),
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: JewelVaultEffects.raised,
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: _pieces.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.checkroom_outlined,
+                        size: 40,
+                        color: JewelVaultColors.border,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Add pieces from your wardrobe\nto start styling',
+                        textAlign: TextAlign.center,
                         style: JewelVaultTypography.bodyMedium.copyWith(
                           fontSize: 12,
                         ),
                       ),
-                    ),
+                    ],
+                  ),
+                )
+              : Stack(
+                  children: [
+                    for (int i = 0; i < _pieces.length; i++)
+                      _CanvasPieceWidget(
+                        key: ValueKey('${_pieces[i].item.id}_$i'),
+                        piece: _pieces[i],
+                        canvasSize: _canvasSize,
+                        selected: _selectedIndex == i,
+                        onTap: () => setState(() => _selectedIndex = i),
+                        onChanged: (updated) =>
+                            setState(() => _pieces[i] = updated),
+                      ),
                   ],
                 ),
-              ),
-            ],
+        ),
+      ),
+    );
+  }
 
-            // Send / Unsend — only shown once a photo has been picked
-            if (_previewBytes != null) ...[
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _isSending ? null : _unsend,
-                      icon: const Icon(Icons.close, size: 18),
-                      label: const Text('Unsend'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: JewelVaultColors.secondaryText,
-                        side: const BorderSide(color: JewelVaultColors.border),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        textStyle: JewelVaultTypography.labelLarge,
-                      ),
-                    ),
+  Widget _buildSelectedPieceToolbar() {
+    final piece = _pieces[_selectedIndex!];
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: JewelVaultColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: JewelVaultColors.border),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              piece.item.title,
+              style: JewelVaultTypography.labelLarge.copyWith(fontSize: 12),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _iconAction(
+                  Icons.rotate_left,
+                  () => _adjustSelected(rotationDelta: -0.13),
+                ),
+                _iconAction(
+                  Icons.rotate_right,
+                  () => _adjustSelected(rotationDelta: 0.13),
+                ),
+                _iconAction(
+                  Icons.remove_circle_outline,
+                  () => _adjustSelected(scaleDelta: -0.1),
+                ),
+                _iconAction(
+                  Icons.add_circle_outline,
+                  () => _adjustSelected(scaleDelta: 0.1),
+                ),
+                _iconAction(
+                  Icons.flip_to_front,
+                  () => _bringForward(_selectedIndex!),
+                ),
+                _iconAction(
+                  Icons.flip_to_back,
+                  () => _sendBackward(_selectedIndex!),
+                ),
+                _iconAction(
+                  Icons.content_copy,
+                  () => _duplicatePiece(_selectedIndex!),
+                ),
+                _iconAction(Icons.restart_alt, _resetSelected),
+                _iconAction(
+                  Icons.delete_outline,
+                  () => _removePiece(_selectedIndex!),
+                  color: Colors.redAccent,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _iconAction(IconData icon, VoidCallback onTap, {Color? color}) {
+    return IconButton(
+      icon: Icon(
+        icon,
+        size: 18,
+        color: color ?? JewelVaultColors.secondaryText,
+      ),
+      onPressed: onTap,
+      splashRadius: 18,
+      padding: const EdgeInsets.all(4),
+      constraints: const BoxConstraints(),
+    );
+  }
+
+  Widget _buildToolbar() {
+    return Row(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _toolbarButton(
+                  icon: Icons.auto_awesome_mosaic_outlined,
+                  label: 'Auto Arrange',
+                  onTap: _pieces.isEmpty ? null : _autoArrangeAll,
+                ),
+                const SizedBox(width: 10),
+                _toolbarButton(
+                  icon: Icons.remove_circle_outline,
+                  label: 'Remove Item',
+                  onTap: _selectedIndex == null
+                      ? null
+                      : () => _removePiece(_selectedIndex!),
+                ),
+                const SizedBox(width: 10),
+                _toolbarButton(
+                  icon: Icons.ios_share,
+                  label: 'Share',
+                  onTap: _pieces.isEmpty ? null : _shareOutfit,
+                ),
+                const SizedBox(width: 10),
+                _toolbarButton(
+                  icon: _isFavoriteDraft
+                      ? Icons.favorite
+                      : Icons.favorite_border,
+                  label: 'Favorite',
+                  active: _isFavoriteDraft,
+                  onTap: () =>
+                      setState(() => _isFavoriteDraft = !_isFavoriteDraft),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        ElevatedButton.icon(
+          onPressed: _isSaving || _pieces.isEmpty ? null : _saveOutfit,
+          icon: _isSaving
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _isSending ? null : _send,
-                      icon: _isSending
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.send_rounded, size: 18),
-                      label: Text(_isSending ? 'Sending…' : 'Send'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: JewelVaultColors.primaryEmerald,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        textStyle: JewelVaultTypography.labelLarge,
-                        elevation: 0,
-                      ),
-                    ),
-                  ),
-                ],
+                )
+              : const Icon(Icons.check, size: 18),
+          label: Text(_isSaving ? 'Saving…' : 'Save Outfit'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: JewelVaultColors.primaryEmerald,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: JewelVaultColors.border,
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            textStyle: JewelVaultTypography.labelLarge,
+            elevation: 0,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _toolbarButton({
+    required IconData icon,
+    required String label,
+    VoidCallback? onTap,
+    bool active = false,
+  }) {
+    final enabled = onTap != null;
+    final color = !enabled
+        ? JewelVaultColors.border
+        : (active
+              ? JewelVaultColors.primaryEmerald
+              : JewelVaultColors.secondaryText);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: active
+              ? JewelVaultColors.primaryEmerald.withOpacity(0.1)
+              : JewelVaultColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: active
+                ? JewelVaultColors.primaryEmerald
+                : JewelVaultColors.border,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: JewelVaultTypography.labelLarge.copyWith(
+                fontSize: 12,
+                color: color,
               ),
-            ],
+            ),
           ],
         ),
       ),
@@ -3583,44 +4411,443 @@ class _OutfitsViewState extends State<_OutfitsView> {
   }
 }
 
-// Grid of previously saved looks. Each look is either a photo the wearer
-// uploaded directly (has an imageUrl) or, for any legacy/composed looks,
-// a set of closet item thumbnails resolved from itemIds.
+// ─────────────────────────────────────────────
+//  OUTFIT LAYOUT ONTOLOGY
+// ─────────────────────────────────────────────
+
+// The catalogue only stores a broad `category` (Garment / Jewelry / Bag /
+// Accessory) per JewelVault's existing model, so slot placement is inferred
+// from category + a keyword scan of the title. This keeps the board fully
+// automatic without requiring any backend or model changes.
+enum OutfitSlot {
+  hat,
+  glasses,
+  earrings,
+  necklace,
+  top,
+  outerwear,
+  watch,
+  bracelet,
+  ring,
+  belt,
+  bottom,
+  shoes,
+  bag,
+  other,
+}
+
+OutfitSlot _slotForItem(ClosetItem item) {
+  final t = item.title.toLowerCase();
+  bool has(List<String> words) => words.any((w) => t.contains(w));
+
+  if (item.category == 'Jewelry') {
+    if (has(['necklace', 'pendant'])) return OutfitSlot.necklace;
+    if (has(['bracelet', 'cuff', 'bangle'])) return OutfitSlot.bracelet;
+    if (has(['ring'])) return OutfitSlot.ring;
+    if (has(['earring', 'stud', 'hoop'])) return OutfitSlot.earrings;
+    if (has(['watch'])) return OutfitSlot.watch;
+    return OutfitSlot.necklace;
+  }
+  if (item.category == 'Bag') return OutfitSlot.bag;
+  if (item.category == 'Accessory') {
+    if (has(['sunglass', 'glasses', 'shade'])) return OutfitSlot.glasses;
+    if (has(['hat', 'cap', 'beanie'])) return OutfitSlot.hat;
+    if (has(['belt'])) return OutfitSlot.belt;
+    if (has(['watch'])) return OutfitSlot.watch;
+    if (has(['scarf'])) return OutfitSlot.necklace;
+    if (has(['hair', 'clip', 'headband'])) return OutfitSlot.hat;
+    return OutfitSlot.other;
+  }
+  // Garment
+  if (has(['coat', 'trench', 'blazer', 'jacket', 'cardigan', 'parka'])) {
+    return OutfitSlot.outerwear;
+  }
+  if (has(['trouser', 'pant', 'jean', 'skirt', 'short'])) {
+    return OutfitSlot.bottom;
+  }
+  if (has(['shoe', 'boot', 'sneaker', 'heel', 'sandal'])) {
+    return OutfitSlot.shoes;
+  }
+  return OutfitSlot.top;
+}
+
+String _wardrobeGroup(ClosetItem item) {
+  switch (_slotForItem(item)) {
+    case OutfitSlot.top:
+    case OutfitSlot.outerwear:
+      return 'Tops';
+    case OutfitSlot.bottom:
+      return 'Bottoms';
+    case OutfitSlot.shoes:
+      return 'Shoes';
+    case OutfitSlot.bag:
+      return 'Bags';
+    case OutfitSlot.necklace:
+    case OutfitSlot.ring:
+    case OutfitSlot.bracelet:
+    case OutfitSlot.watch:
+    case OutfitSlot.earrings:
+      return 'Jewelry';
+    default:
+      return 'Accessories';
+  }
+}
+
+// Fractional anchor (of canvas width/height) each slot naturally sits at —
+// head to toe — so the board always reads like a coherent silhouette.
+const Map<OutfitSlot, Offset> _slotAnchorFrac = {
+  OutfitSlot.hat: Offset(0.5, 0.07),
+  OutfitSlot.glasses: Offset(0.5, 0.15),
+  OutfitSlot.earrings: Offset(0.64, 0.19),
+  OutfitSlot.necklace: Offset(0.5, 0.24),
+  OutfitSlot.top: Offset(0.5, 0.40),
+  OutfitSlot.outerwear: Offset(0.5, 0.40),
+  OutfitSlot.watch: Offset(0.20, 0.52),
+  OutfitSlot.bracelet: Offset(0.80, 0.50),
+  OutfitSlot.ring: Offset(0.80, 0.60),
+  OutfitSlot.belt: Offset(0.5, 0.55),
+  OutfitSlot.bottom: Offset(0.5, 0.67),
+  OutfitSlot.shoes: Offset(0.5, 0.90),
+  OutfitSlot.bag: Offset(0.86, 0.75),
+  OutfitSlot.other: Offset(0.14, 0.90),
+};
+
+// Default piece footprint, as a fraction of canvas width/height.
+const Map<OutfitSlot, Size> _slotSizeFrac = {
+  OutfitSlot.hat: Size(0.20, 0.10),
+  OutfitSlot.glasses: Size(0.22, 0.08),
+  OutfitSlot.earrings: Size(0.12, 0.08),
+  OutfitSlot.necklace: Size(0.22, 0.12),
+  OutfitSlot.top: Size(0.42, 0.26),
+  OutfitSlot.outerwear: Size(0.46, 0.28),
+  OutfitSlot.watch: Size(0.16, 0.10),
+  OutfitSlot.bracelet: Size(0.16, 0.10),
+  OutfitSlot.ring: Size(0.10, 0.08),
+  OutfitSlot.belt: Size(0.30, 0.06),
+  OutfitSlot.bottom: Size(0.40, 0.28),
+  OutfitSlot.shoes: Size(0.30, 0.14),
+  OutfitSlot.bag: Size(0.22, 0.18),
+  OutfitSlot.other: Size(0.18, 0.12),
+};
+
+// A single item placed on the outfit board. Position is stored in canvas
+// -local pixels (against `_canvasSize`); scale/rotation are user-adjustable
+// on top of the auto-computed base footprint.
+class _CanvasPiece {
+  final ClosetItem item;
+  Offset position;
+  double scale;
+  double rotation;
+  final double widthFrac;
+  final double heightFrac;
+
+  _CanvasPiece({
+    required this.item,
+    required this.position,
+    this.scale = 1.0,
+    this.rotation = 0.0,
+    required this.widthFrac,
+    required this.heightFrac,
+  });
+
+  _CanvasPiece copyWith({Offset? position, double? scale, double? rotation}) {
+    return _CanvasPiece(
+      item: item,
+      position: position ?? this.position,
+      scale: scale ?? this.scale,
+      rotation: rotation ?? this.rotation,
+      widthFrac: widthFrac,
+      heightFrac: heightFrac,
+    );
+  }
+}
+
+// Groups the given items by slot and lays each group out centred on its
+// anchor, spreading siblings sideways so nothing overlaps.
+List<_CanvasPiece> _autoArrangePieces(List<ClosetItem> items, Size canvas) {
+  final bySlot = <OutfitSlot, List<ClosetItem>>{};
+  for (final it in items) {
+    bySlot.putIfAbsent(_slotForItem(it), () => []).add(it);
+  }
+  final pieces = <_CanvasPiece>[];
+  bySlot.forEach((slot, group) {
+    final anchor = _slotAnchorFrac[slot] ?? const Offset(0.5, 0.5);
+    final size = _slotSizeFrac[slot] ?? const Size(0.2, 0.14);
+    final n = group.length;
+    for (var i = 0; i < n; i++) {
+      final offsetIndex = i - (n - 1) / 2;
+      final halfW = size.width * canvas.width / 2;
+      final rawDx =
+          (anchor.dx * canvas.width) +
+          offsetIndex * (size.width * canvas.width * 0.92);
+      final dx = rawDx.clamp(halfW + 6, canvas.width - halfW - 6);
+      final dy = anchor.dy * canvas.height;
+      pieces.add(
+        _CanvasPiece(
+          item: group[i],
+          position: Offset(dx, dy),
+          widthFrac: size.width,
+          heightFrac: size.height,
+        ),
+      );
+    }
+  });
+  return pieces;
+}
+
+// ─────────────────────────────────────────────
+//  WARDROBE ITEM CARD
+// ─────────────────────────────────────────────
+
+class _WardrobeItemCard extends StatelessWidget {
+  final ClosetItem item;
+  final bool isAdded;
+  final VoidCallback onAdd;
+  const _WardrobeItemCard({
+    required this.item,
+    required this.isAdded,
+    required this.onAdd,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF6F1EA),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: JewelVaultColors.border),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: Stack(
+              children: [
+                Positioned.fill(child: _itemImage(item, iconSize: 26)),
+                if (item.isFavorite)
+                  const Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Icon(
+                      Icons.favorite,
+                      size: 14,
+                      color: Colors.redAccent,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _CategoryTag(item.category),
+                const SizedBox(height: 4),
+                Text(
+                  item.title,
+                  style: JewelVaultTypography.labelLarge.copyWith(fontSize: 11),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${item.brand} · ${item.color}',
+                  style: JewelVaultTypography.bodyMedium.copyWith(
+                    fontSize: 9.5,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
+                GestureDetector(
+                  onTap: onAdd,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: isAdded
+                          ? JewelVaultColors.primaryEmerald.withOpacity(0.1)
+                          : JewelVaultColors.primaryEmerald,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isAdded ? Icons.check : Icons.add,
+                          size: 13,
+                          color: isAdded
+                              ? JewelVaultColors.primaryEmerald
+                              : Colors.white,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          isAdded ? 'Added' : 'Add',
+                          style: JewelVaultTypography.labelSmall.copyWith(
+                            fontSize: 10,
+                            color: isAdded
+                                ? JewelVaultColors.primaryEmerald
+                                : Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+//  CANVAS PIECE — drag, pinch-scale, rotate
+// ─────────────────────────────────────────────
+
+class _CanvasPieceWidget extends StatefulWidget {
+  final _CanvasPiece piece;
+  final Size canvasSize;
+  final bool selected;
+  final VoidCallback onTap;
+  final ValueChanged<_CanvasPiece> onChanged;
+
+  const _CanvasPieceWidget({
+    super.key,
+    required this.piece,
+    required this.canvasSize,
+    required this.selected,
+    required this.onTap,
+    required this.onChanged,
+  });
+
+  @override
+  State<_CanvasPieceWidget> createState() => _CanvasPieceWidgetState();
+}
+
+class _CanvasPieceWidgetState extends State<_CanvasPieceWidget> {
+  Offset _startFocal = Offset.zero;
+  Offset _startPos = Offset.zero;
+  double _startScale = 1;
+  double _startRotation = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = widget.piece;
+    final w = p.widthFrac * widget.canvasSize.width * p.scale;
+    final h = p.heightFrac * widget.canvasSize.height * p.scale;
+    return Positioned(
+      left: p.position.dx - w / 2,
+      top: p.position.dy - h / 2,
+      width: w,
+      height: h,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onTap,
+        onScaleStart: (details) {
+          _startFocal = details.focalPoint;
+          _startPos = p.position;
+          _startScale = p.scale;
+          _startRotation = p.rotation;
+        },
+        onScaleUpdate: (details) {
+          final newPos = _startPos + (details.focalPoint - _startFocal);
+          final newScale = (_startScale * details.scale).clamp(0.4, 2.5);
+          final newRotation = _startRotation + details.rotation;
+          widget.onChanged(
+            p.copyWith(
+              position: newPos,
+              scale: newScale,
+              rotation: newRotation,
+            ),
+          );
+        },
+        child: Transform.rotate(
+          angle: p.rotation,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: widget.selected
+                    ? JewelVaultColors.primaryEmerald
+                    : Colors.white,
+                width: widget.selected ? 2 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.10),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: _itemImage(p.item, iconSize: 22),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+//  SAVED LOOKBOOK
+// ─────────────────────────────────────────────
+
 class _LooksGrid extends StatelessWidget {
   final List<Map<String, dynamic>> looks;
   final List<ClosetItem> items;
-  const _LooksGrid({required this.looks, required this.items});
+  final ValueChanged<int> onFavorite;
+  final ValueChanged<int> onDelete;
+  final ValueChanged<Map<String, dynamic>> onEdit;
+
+  const _LooksGrid({
+    required this.looks,
+    required this.items,
+    required this.onFavorite,
+    required this.onDelete,
+    required this.onEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (ctx, constraints) {
-        final isWide = constraints.maxWidth > 700;
-        final cards = looks.map((look) {
-          final photoUrl = look['imageUrl'] as String?;
-          if (photoUrl != null && photoUrl.isNotEmpty) {
-            return _PhotoLookCard(imageUrl: photoUrl);
-          }
-          final ids = (look['itemIds'] as List?)?.cast<String>() ?? const [];
-          final lookItems = ids
-              .map((id) => items.where((e) => e.id == id))
-              .where((matches) => matches.isNotEmpty)
-              .map((matches) => matches.first)
-              .toList();
-          return _LookCard(items: lookItems);
-        }).toList();
-
+        final crossAxisCount = constraints.maxWidth > 900
+            ? 3
+            : (constraints.maxWidth > 560 ? 2 : 1);
         return GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: isWide ? 2 : 1,
+            crossAxisCount: crossAxisCount,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
-            mainAxisExtent: 190,
+            mainAxisExtent: 250,
           ),
-          itemCount: cards.length,
-          itemBuilder: (ctx, i) => cards[i],
+          itemCount: looks.length,
+          itemBuilder: (ctx, i) {
+            final look = looks[i];
+            final ids = (look['itemIds'] as List?)?.cast<String>() ?? const [];
+            final lookItems = ids
+                .map((id) => items.where((e) => e.id == id))
+                .where((matches) => matches.isNotEmpty)
+                .map((matches) => matches.first)
+                .toList();
+            return _SavedOutfitCard(
+              look: look,
+              items: lookItems,
+              onFavorite: () => onFavorite(i),
+              onDelete: () => onDelete(i),
+              onEdit: () => onEdit(look),
+            );
+          },
         );
       },
     );
@@ -3659,137 +4886,180 @@ Widget _photoLookImage(String url) {
   );
 }
 
-// A saved outfit uploaded as a single photo, rather than composed from
-// catalogued closet items.
-class _PhotoLookCard extends StatelessWidget {
-  final String imageUrl;
-  const _PhotoLookCard({required this.imageUrl});
+// Fallback preview for looks that don't carry a rendered photo — a small
+// mosaic of the pieces that make up the outfit.
+class _LookMosaic extends StatelessWidget {
+  final List<ClosetItem> items;
+  const _LookMosaic({required this.items});
 
   @override
-  Widget build(BuildContext context) => Container(
-    decoration: BoxDecoration(
-      color: JewelVaultColors.surface,
-      borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: JewelVaultColors.border),
-      boxShadow: JewelVaultEffects.card,
-    ),
-    clipBehavior: Clip.antiAlias,
-    child: Stack(
-      fit: StackFit.expand,
-      children: [
-        _photoLookImage(imageUrl),
-        Positioned(
-          left: 10,
-          bottom: 10,
+  Widget build(BuildContext context) {
+    final display = items.take(4).toList();
+    return Container(
+      color: const Color(0xFFF6F1EA),
+      padding: const EdgeInsets.all(6),
+      child: GridView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: display.length > 1 ? 2 : 1,
+          crossAxisSpacing: 4,
+          mainAxisSpacing: 4,
+        ),
+        itemCount: display.length,
+        itemBuilder: (ctx, i) => ClipRRect(
+          borderRadius: BorderRadius.circular(8),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.45),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+            color: _categoryColor(display[i].category),
+            child: _itemImage(display[i], iconSize: 18),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SavedOutfitCard extends StatelessWidget {
+  final Map<String, dynamic> look;
+  final List<ClosetItem> items;
+  final VoidCallback onFavorite;
+  final VoidCallback onDelete;
+  final VoidCallback onEdit;
+
+  const _SavedOutfitCard({
+    required this.look,
+    required this.items,
+    required this.onFavorite,
+    required this.onDelete,
+    required this.onEdit,
+  });
+
+  static String _formatDate(String? iso) {
+    if (iso == null) return 'Saved look';
+    try {
+      final d = DateTime.parse(iso);
+      const months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+      return '${months[d.month - 1]} ${d.day}';
+    } catch (_) {
+      return 'Saved look';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final photoUrl = look['imageUrl'] as String?;
+    final name = (look['name'] as String?) ?? 'Untitled Look';
+    final dateLabel = _formatDate(look['createdAt'] as String?);
+    final count = items.isNotEmpty
+        ? items.length
+        : ((look['itemIds'] as List?)?.length ?? 0);
+    final isFav = look['isFavorite'] == true;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: JewelVaultColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: JewelVaultColors.border),
+        boxShadow: JewelVaultEffects.card,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: Stack(
+              fit: StackFit.expand,
               children: [
-                const Icon(
-                  Icons.photo_camera_outlined,
-                  size: 11,
-                  color: Colors.white,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Uploaded look',
-                  style: JewelVaultTypography.labelSmall.copyWith(
-                    fontSize: 9,
-                    color: Colors.white,
+                if (photoUrl != null && photoUrl.isNotEmpty)
+                  _photoLookImage(photoUrl)
+                else if (items.isNotEmpty)
+                  _LookMosaic(items: items)
+                else
+                  Container(
+                    color: const Color(0xFFF6F1EA),
+                    child: const Icon(
+                      Icons.style_outlined,
+                      color: JewelVaultColors.primaryEmerald,
+                    ),
+                  ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    onTap: onFavorite,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isFav ? Icons.favorite : Icons.favorite_border,
+                        size: 14,
+                        color: isFav
+                            ? Colors.redAccent
+                            : JewelVaultColors.mutedText,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
-
-class _LookCard extends StatelessWidget {
-  final List<ClosetItem> items;
-  const _LookCard({required this.items});
-
-  @override
-  Widget build(BuildContext context) {
-    final avgMatch = items.isEmpty
-        ? 0.0
-        : items.map((e) => e.matchScore).reduce((a, b) => a + b) / items.length;
-    final totalWorn = items.fold(0, (sum, e) => sum + e.wornCount);
-    final categories = items.map((e) => e.category).toSet().toList();
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: JewelVaultColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: JewelVaultColors.border),
-        boxShadow: JewelVaultEffects.card,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: Row(
-              children: items.take(4).map((item) {
-                return Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    clipBehavior: Clip.antiAlias,
-                    decoration: BoxDecoration(
-                      color: _categoryColor(item.category),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: _itemImage(item, iconSize: 22),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 8, 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: JewelVaultTypography.labelLarge,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$dateLabel · $count piece${count == 1 ? '' : 's'}',
+                  style: JewelVaultTypography.bodyMedium.copyWith(
+                    fontSize: 10.5,
                   ),
-                );
-              }).toList(),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, size: 16),
+                      onPressed: onEdit,
+                      splashRadius: 16,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      color: JewelVaultColors.secondaryText,
+                    ),
+                    const SizedBox(width: 14),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 16),
+                      onPressed: onDelete,
+                      splashRadius: 16,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      color: JewelVaultColors.secondaryText,
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 10),
-          Divider(height: 1, color: JewelVaultColors.borderLight),
-          const SizedBox(height: 8),
-          // Stats footer: piece count, category mix, worn total, avg match
-          Row(
-            children: [
-              _MiniStat(
-                icon: Icons.checkroom_outlined,
-                value: '${items.length}',
-                caption: 'PIECES',
-              ),
-              const SizedBox(width: 14),
-              _MiniStat(
-                icon: Icons.repeat,
-                value: '$totalWorn',
-                caption: 'WORN',
-              ),
-              const SizedBox(width: 4),
-              Row(children: categories.map(_CategoryDot.new).toList()),
-              const Spacer(),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '${avgMatch.toInt()}% match',
-                    style: JewelVaultTypography.labelLarge.copyWith(
-                      fontSize: 11,
-                      color: avgMatch >= 90
-                          ? JewelVaultColors.primaryEmerald
-                          : JewelVaultColors.accentGold,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  _MatchMeter(score: avgMatch, width: 46),
-                ],
-              ),
-            ],
           ),
         ],
       ),
@@ -3806,16 +5076,14 @@ class _MatchBadge extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
     decoration: BoxDecoration(
       color: score >= 90
-          ? JewelVaultColors.primaryEmerald.withOpacity(0.1)
-          : JewelVaultColors.accentGoldLight,
+          ? AppColors.primaryEmerald.withOpacity(0.1)
+          : AppColors.accentGoldLight,
       borderRadius: BorderRadius.circular(20),
     ),
     child: Text(
       '${score.toInt()}% match',
-      style: JewelVaultTypography.labelSmall.copyWith(
-        color: score >= 90
-            ? JewelVaultColors.primaryEmerald
-            : JewelVaultColors.accentGold,
+      style: AppTypography.labelSmall.copyWith(
+        color: score >= 90 ? AppColors.primaryEmerald : AppColors.accentGold,
         letterSpacing: 0.3,
       ),
     ),
@@ -4030,7 +5298,7 @@ class _AddItemViewState extends State<_AddItemView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Catalog New Piece', style: JewelVaultTypography.headingLarge),
+            Text('Catalog New Piece', style: AppTypography.headingLarge),
             Text(
               'Snap or upload a photo — the AI fills in the rest.',
               style: JewelVaultTypography.bodyMedium,
