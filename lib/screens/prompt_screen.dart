@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'dashboard_screen.dart'; // reuses your existing color/text styles
+import '../core/theme/app_colors.dart';
+import '../core/theme/app_typography.dart';
 
 class PromptScreen extends StatefulWidget {
   const PromptScreen({super.key});
@@ -33,8 +34,8 @@ class _PromptScreenState extends State<PromptScreen> {
       // ── STUBBED FOR NOW ──────────────────────────────────────
       // This fakes what the real backend will eventually return,
       // so the screen works end-to-end today. Swap this whole
-      // try block for the real API call once AN's backend is live
-      // (see the note below the class for exactly what to change).
+      // try block for the real API call once the Python backend
+      // (python-worker) is wired up.
       await Future.delayed(const Duration(seconds: 1)); // pretend it's "thinking"
       final fakeResponse =
           'Based on "$prompt", I\'d suggest your Silk Slip Dress paired with the Emerald Pendant — a refined, effortless look perfect for the occasion.';
@@ -54,12 +55,12 @@ class _PromptScreenState extends State<PromptScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: JewelVaultColors.background,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: JewelVaultColors.background,
+        backgroundColor: AppColors.background,
         elevation: 0,
-        title: Text('Ask JewelVault', style: JewelVaultTypography.headingMedium),
-        iconTheme: const IconThemeData(color: JewelVaultColors.primaryText),
+        title: Text('Ask JewelVault', style: AppTypography.headingMedium),
+        iconTheme: const IconThemeData(color: AppColors.primaryText),
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),
@@ -68,12 +69,12 @@ class _PromptScreenState extends State<PromptScreen> {
           children: [
             Text(
               'What are you dressing for?',
-              style: JewelVaultTypography.headingSmall,
+              style: AppTypography.headingSmall,
             ),
             const SizedBox(height: 8),
             Text(
               'e.g. "I want a dress for a wedding" — we\'ll find the perfect match from your closet.',
-              style: JewelVaultTypography.bodyMedium,
+              style: AppTypography.bodyMedium,
             ),
             const SizedBox(height: 20),
 
@@ -84,18 +85,18 @@ class _PromptScreenState extends State<PromptScreen> {
               decoration: InputDecoration(
                 hintText: 'Type what you need an outfit for...',
                 filled: true,
-                fillColor: JewelVaultColors.surface,
+                fillColor: AppColors.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: JewelVaultColors.border),
+                  borderSide: const BorderSide(color: AppColors.border),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: JewelVaultColors.border),
+                  borderSide: const BorderSide(color: AppColors.border),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: JewelVaultColors.primaryEmerald, width: 1.5),
+                  borderSide: const BorderSide(color: AppColors.primaryEmerald, width: 1.5),
                 ),
                 contentPadding: const EdgeInsets.all(16),
               ),
@@ -103,10 +104,11 @@ class _PromptScreenState extends State<PromptScreen> {
             const SizedBox(height: 16),
 
             // Submit button — shows a spinner while "loading"
+            
             ElevatedButton(
               onPressed: _isLoading ? null : _submitPrompt,
               style: ElevatedButton.styleFrom(
-                backgroundColor: JewelVaultColors.primaryEmerald,
+                backgroundColor: AppColors.primaryEmerald,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 minimumSize: const Size(double.infinity, 0),
@@ -143,7 +145,7 @@ class _PromptScreenState extends State<PromptScreen> {
                     Expanded(
                       child: Text(
                         _resultText!,
-                        style: JewelVaultTypography.bodyMedium.copyWith(
+                        style: AppTypography.bodyMedium.copyWith(
                           color: Colors.white.withOpacity(0.9),
                           height: 1.6,
                         ),
