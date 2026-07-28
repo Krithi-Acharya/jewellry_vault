@@ -36,7 +36,8 @@ class _LoginScreenState extends State<LoginScreen> {
         emailController.text.trim(),
         passwordController.text.trim(),
       );
-      
+      // Sync user to PostgreSQL backend
+      await AuthService.instance.syncUserToBackend();
       if (!context.mounted) return;
       // Successfully authenticated! Close this login view so the AuthGate 
       // parent widget can automatically swap to your Dashboard.

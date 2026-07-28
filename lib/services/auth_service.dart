@@ -1,4 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:dio/dio.dart';
+import '../core/config/app_config.dart';
+import '../core/constants/api_constants.dart';
 
 class AuthService {
   static final AuthService instance = AuthService._internal();
@@ -52,4 +55,36 @@ class AuthService {
 
   // Reads the token stored in this session (fast, no async needed)
   String? get currentSessionToken => _sessionToken;
+
+  // Sync user profile to PostgreSQL backend
+  Future<void> syncUserToBackend({
+    String? displayName,
+    String? firstName,
+    String? lastName,
+  }) async {
+    final token = await getIdToken();
+    if (token == null) return;
+
+    try {
+      final dio = Dio();
+      final url = '${AppConfig.apiBaseUrl}${ApiConstants.syncUser}';
+      await dio.post(
+        url,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        ),
+        data: {
+          if (displayName != null) 'displayName': displayName,
+          if (firstName != null) 'firstName': firstName,
+          if (lastName != null) 'lastName': lastName,
+        },
+      );
+    } catch (e) {
+      // In production, we'd log this securely or queue it for retry
+      print('Failed to sync user to backend: $e');
+    }
+  }
 }

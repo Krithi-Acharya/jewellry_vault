@@ -5,80 +5,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../api_service.dart';
 import '../services/auth_service.dart';
 
-// ─────────────────────────────────────────────
-//  DESIGN SYSTEM
-// ─────────────────────────────────────────────
-
-class JewelVaultColors {
-  static const Color background = Color(0xFFF7F3EE);
-  static const Color surface = Color(0xFFFFFFFF);
-  static const Color primaryEmerald = Color(0xFF1B4332);
-  static const Color darkEmerald = Color(0xFF012D1D);
-  static const Color accentGold = Color(0xFFB8976A);
-  static const Color accentGoldLight = Color(0xFFF5ECD9);
-  static const Color border = Color(0xFFE5DDD0);
-  static const Color borderLight = Color(0xFFF0EAE0);
-  static const Color primaryText = Color(0xFF1A1815);
-  static const Color secondaryText = Color(0xFF6B6258);
-  static const Color mutedText = Color(0xFFAA9E94);
-  static const Color tagGarment = Color(0xFFE8F4F0);
-  static const Color tagJewelry = Color(0xFFF5ECD9);
-  static const Color tagAccessory = Color(0xFFF0EBF5);
-  static const Color tagBag = Color(0xFFEFF3FA);
-}
-
-class JewelVaultTypography {
-  static TextStyle display = GoogleFonts.fraunces(
-    fontSize: 36,
-    fontWeight: FontWeight.w600,
-    color: JewelVaultColors.primaryText,
-    height: 1.2,
-  );
-  static TextStyle headingLarge = GoogleFonts.fraunces(
-    fontSize: 28,
-    fontWeight: FontWeight.w500,
-    color: JewelVaultColors.primaryText,
-    height: 1.4,
-  );
-  static TextStyle headingMedium = GoogleFonts.fraunces(
-    fontSize: 22,
-    fontWeight: FontWeight.w500,
-    color: JewelVaultColors.primaryText,
-  );
-  static TextStyle headingSmall = GoogleFonts.fraunces(
-    fontSize: 17,
-    fontWeight: FontWeight.w500,
-    color: JewelVaultColors.primaryText,
-  );
-  static TextStyle bodyLarge = GoogleFonts.inter(
-    fontSize: 16,
-    fontWeight: FontWeight.w300,
-    color: JewelVaultColors.secondaryText,
-    height: 1.6,
-  );
-  static TextStyle bodyMedium = GoogleFonts.inter(
-    fontSize: 14,
-    fontWeight: FontWeight.w400,
-    color: JewelVaultColors.secondaryText,
-    height: 1.6,
-  );
-  static TextStyle labelLarge = GoogleFonts.inter(
-    fontSize: 13,
-    fontWeight: FontWeight.w600,
-    letterSpacing: 0.3,
-    color: JewelVaultColors.primaryText,
-  );
-  static TextStyle labelSmall = GoogleFonts.inter(
-    fontSize: 11,
-    fontWeight: FontWeight.w500,
-    letterSpacing: 0.8,
-    color: JewelVaultColors.mutedText,
-  );
-  static TextStyle mono = GoogleFonts.spaceMono(
-    fontSize: 12,
-    color: JewelVaultColors.secondaryText,
-  );
-}
+import '../core/theme/app_colors.dart';
+import '../core/theme/app_typography.dart';
+import '../core/theme/app_radius.dart';
+import '../core/theme/app_spacing.dart';
 
 // ─────────────────────────────────────────────
 //  DATA MODEL
@@ -489,10 +419,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (_isLoading) {
       return const Scaffold(
-        backgroundColor: JewelVaultColors.background,
+        backgroundColor: AppColors.background,
         body: Center(
           child: CircularProgressIndicator(
-            color: JewelVaultColors.primaryEmerald,
+            color: AppColors.primaryEmerald,
           ),
         ),
       );
@@ -501,9 +431,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final List<Widget> views = [
       _DashboardView(
         items: _closetItems,
-        onNavigateToCloset: () => setState(() => _selectedIndex = 1),
+        onNavigateToCloset: () => Navigator.pushNamed(context, '/closet'),
         onNavigateToOutfits: () => setState(() => _selectedIndex = 2),
-        onNavigateToAdd: () => setState(() => _selectedIndex = 3),
+        onNavigateToAdd: () => Navigator.pushNamed(context, '/upload'),
       ),
       _ClosetView(items: _closetItems, onToggleFavorite: _toggleFavorite),
       _OutfitsView(items: _closetItems),
@@ -511,28 +441,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: JewelVaultColors.background,
+      backgroundColor: AppColors.background,
       drawer: !isDesktop
           ? Drawer(
-              backgroundColor: JewelVaultColors.surface,
+              backgroundColor: AppColors.surface,
               child: _SidebarContent(
                 selectedIndex: _selectedIndex,
                 navItems: _navItems,
                 onSelected: (i) {
-                  setState(() => _selectedIndex = i);
                   Navigator.pop(context);
+                  if (i == 1) {
+                    Navigator.pushNamed(context, '/closet');
+                  } else if (i == 3) {
+                    Navigator.pushNamed(context, '/upload');
+                  } else {
+                    setState(() => _selectedIndex = i);
+                  }
                 },
               ),
             )
           : null,
       appBar: !isDesktop
           ? AppBar(
-              backgroundColor: JewelVaultColors.surface,
+              backgroundColor: AppColors.surface,
               surfaceTintColor: Colors.transparent,
               elevation: 0,
               title: _LogoRow(),
               iconTheme: const IconThemeData(
-                color: JewelVaultColors.primaryEmerald,
+                color: AppColors.primaryEmerald,
               ),
             )
           : null,
@@ -544,13 +480,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Container(
                 decoration: const BoxDecoration(
                   border: Border(
-                    right: BorderSide(color: JewelVaultColors.border),
+                    right: BorderSide(color: AppColors.border),
                   ),
                 ),
                 child: _SidebarContent(
                   selectedIndex: _selectedIndex,
                   navItems: _navItems,
-                  onSelected: (i) => setState(() => _selectedIndex = i),
+                  onSelected: (i) {
+                    if (i == 1) {
+                      Navigator.pushNamed(context, '/closet');
+                    } else if (i == 3) {
+                      Navigator.pushNamed(context, '/upload');
+                    } else {
+                      setState(() => _selectedIndex = i);
+                    }
+                  },
                 ),
               ),
             ),
@@ -593,7 +537,7 @@ class _LogoRow extends StatelessWidget {
       Container(
         padding: const EdgeInsets.all(7),
         decoration: BoxDecoration(
-          color: JewelVaultColors.primaryEmerald,
+          color: AppColors.primaryEmerald,
           borderRadius: BorderRadius.circular(9),
         ),
         child: const Icon(
@@ -605,7 +549,7 @@ class _LogoRow extends StatelessWidget {
       const SizedBox(width: 12),
       Text(
         'JewelVault',
-        style: JewelVaultTypography.headingMedium.copyWith(letterSpacing: -0.5),
+        style: AppTypography.headingMedium.copyWith(letterSpacing: -0.5),
       ),
     ],
   );
@@ -636,7 +580,7 @@ class _SidebarContent extends StatelessWidget {
             user?.displayName ?? user?.email?.split('@')[0] ?? 'User';
 
         return Container(
-          color: JewelVaultColors.surface,
+          color: AppColors.surface,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -645,7 +589,7 @@ class _SidebarContent extends StatelessWidget {
               const SizedBox(height: 44),
               Text(
                 'MENU',
-                style: JewelVaultTypography.labelSmall.copyWith(
+                style: AppTypography.labelSmall.copyWith(
                   letterSpacing: 1.5,
                 ),
               ),
@@ -668,7 +612,7 @@ class _SidebarContent extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? JewelVaultColors.primaryEmerald
+                              ? AppColors.primaryEmerald
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -678,16 +622,16 @@ class _SidebarContent extends StatelessWidget {
                               isSelected ? item['selectedIcon'] : item['icon'],
                               color: isSelected
                                   ? Colors.white
-                                  : JewelVaultColors.secondaryText,
+                                  : AppColors.secondaryText,
                               size: 20,
                             ),
                             const SizedBox(width: 14),
                             Text(
                               item['title'],
-                              style: JewelVaultTypography.labelLarge.copyWith(
+                              style: AppTypography.labelLarge.copyWith(
                                 color: isSelected
                                     ? Colors.white
-                                    : JewelVaultColors.primaryText,
+                                    : AppColors.primaryText,
                                 fontWeight: isSelected
                                     ? FontWeight.w600
                                     : FontWeight.w400,
@@ -700,7 +644,7 @@ class _SidebarContent extends StatelessWidget {
                   },
                 ),
               ),
-              Container(height: 1, color: JewelVaultColors.border),
+              Container(height: 1, color: AppColors.border),
               const SizedBox(height: 16),
               GestureDetector(
                 onTap: () => Navigator.pushNamed(context, '/prompt'),
@@ -728,23 +672,23 @@ class _SidebarContent extends StatelessWidget {
                 onTap: () => Navigator.pushNamed(context, '/profile'),
                 leading: CircleAvatar(
                   radius: 18,
-                  backgroundColor: JewelVaultColors.accentGoldLight,
+                  backgroundColor: AppColors.accentGoldLight,
                   child: Text(
                     displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U',
-                    style: JewelVaultTypography.labelLarge.copyWith(
-                      color: JewelVaultColors.accentGold,
+                    style: AppTypography.labelLarge.copyWith(
+                      color: AppColors.accentGold,
                     ),
                   ),
                 ),
                 title: Text(
                   displayName,
-                  style: JewelVaultTypography.labelLarge,
+                  style: AppTypography.labelLarge,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 subtitle: Text(
                   'Premium Member',
-                  style: JewelVaultTypography.bodyMedium.copyWith(fontSize: 11),
+                  style: AppTypography.bodyMedium.copyWith(fontSize: 11),
                 ),
                 trailing: IconButton(
                   icon: const Icon(
@@ -830,14 +774,14 @@ class _DashboardView extends StatelessWidget {
                   children: [
                     Text(
                       'Good morning, $firstName ✦',
-                      style: JewelVaultTypography.display.copyWith(
+                      style: AppTypography.display.copyWith(
                         fontSize: 30,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       'Your collection is looking exceptional today.',
-                      style: JewelVaultTypography.bodyLarge,
+                      style: AppTypography.bodyLarge,
                     ),
                   ],
                 ),
@@ -877,7 +821,7 @@ class _DashboardView extends StatelessWidget {
                                 label: 'Garments',
                                 value: '$garmentCount',
                                 icon: Icons.checkroom_outlined,
-                                color: JewelVaultColors.tagGarment,
+                                color: AppColors.tagGarment,
                                 onTap: onNavigateToCloset,
                               ),
                             ),
@@ -891,7 +835,7 @@ class _DashboardView extends StatelessWidget {
                                 label: 'Jewelry',
                                 value: '$jewelryCount',
                                 icon: Icons.diamond_outlined,
-                                color: JewelVaultColors.tagJewelry,
+                                color: AppColors.tagJewelry,
                                 onTap: onNavigateToCloset,
                               ),
                             ),
@@ -924,7 +868,7 @@ class _DashboardView extends StatelessWidget {
                             label: 'Garments',
                             value: '$garmentCount',
                             icon: Icons.checkroom_outlined,
-                            color: JewelVaultColors.tagGarment,
+                            color: AppColors.tagGarment,
                             onTap: onNavigateToCloset,
                           ),
                         ),
@@ -934,7 +878,7 @@ class _DashboardView extends StatelessWidget {
                             label: 'Jewelry',
                             value: '$jewelryCount',
                             icon: Icons.diamond_outlined,
-                            color: JewelVaultColors.tagJewelry,
+                            color: AppColors.tagJewelry,
                             onTap: onNavigateToCloset,
                           ),
                         ),
@@ -991,14 +935,14 @@ class _DashboardView extends StatelessWidget {
           const SizedBox(height: 32),
 
           // ── WARDROBE INSIGHTS ────────────────────────────────
-          Text('Wardrobe Insights', style: JewelVaultTypography.headingSmall),
+          Text('Wardrobe Insights', style: AppTypography.headingSmall),
           const SizedBox(height: 16),
           _WardrobeInsightsRow(items: items),
 
           const SizedBox(height: 32),
 
           // ── SEASON BREAKDOWN ─────────────────────────────────
-          Text('By Season', style: JewelVaultTypography.headingSmall),
+          Text('By Season', style: AppTypography.headingSmall),
           const SizedBox(height: 16),
           _SeasonBreakdown(items: items),
         ],
@@ -1024,7 +968,7 @@ class _QuickActionButton extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: JewelVaultColors.primaryEmerald,
+        color: AppColors.primaryEmerald,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -1034,7 +978,7 @@ class _QuickActionButton extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             label,
-            style: JewelVaultTypography.labelLarge.copyWith(
+            style: AppTypography.labelLarge.copyWith(
               color: Colors.white,
             ),
           ),
@@ -1055,7 +999,7 @@ class _StatCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.icon,
-    this.color = JewelVaultColors.surface,
+    this.color = AppColors.surface,
     required this.onTap,
   });
 
@@ -1065,9 +1009,9 @@ class _StatCard extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: JewelVaultColors.surface,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: JewelVaultColors.border),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1075,20 +1019,20 @@ class _StatCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color == JewelVaultColors.surface
-                  ? JewelVaultColors.background
+              color: color == AppColors.surface
+                  ? AppColors.background
                   : color,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, size: 18, color: JewelVaultColors.primaryEmerald),
+            child: Icon(icon, size: 18, color: AppColors.primaryEmerald),
           ),
           const SizedBox(height: 16),
           Text(
             value,
-            style: JewelVaultTypography.display.copyWith(fontSize: 28),
+            style: AppTypography.display.copyWith(fontSize: 28),
           ),
           const SizedBox(height: 4),
-          Text(label, style: JewelVaultTypography.bodyMedium),
+          Text(label, style: AppTypography.bodyMedium),
         ],
       ),
     ),
@@ -1133,7 +1077,7 @@ class _AISuggestionCard extends StatelessWidget {
             const SizedBox(width: 10),
             Text(
               'AI PAIR OF THE DAY',
-              style: JewelVaultTypography.labelSmall.copyWith(
+              style: AppTypography.labelSmall.copyWith(
                 color: Colors.white70,
                 letterSpacing: 1.5,
               ),
@@ -1152,12 +1096,12 @@ class _AISuggestionCard extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: JewelVaultColors.accentGold.withOpacity(0.3),
+                  color: AppColors.accentGold.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   '+',
-                  style: JewelVaultTypography.labelLarge.copyWith(
+                  style: AppTypography.labelLarge.copyWith(
                     color: Colors.white,
                   ),
                 ),
@@ -1169,7 +1113,7 @@ class _AISuggestionCard extends StatelessWidget {
           const SizedBox(height: 20),
           Text(
             '"${pairA!.title}" pairs beautifully with "${pairB!.title}" — a ${pairA!.matchScore.toInt()}% aesthetic match for a refined, effortless look.',
-            style: JewelVaultTypography.bodyMedium.copyWith(
+            style: AppTypography.bodyMedium.copyWith(
               color: Colors.white.withOpacity(0.8),
               height: 1.6,
             ),
@@ -1182,14 +1126,14 @@ class _AISuggestionCard extends StatelessWidget {
             children: [
               Text(
                 'See all outfit ideas',
-                style: JewelVaultTypography.labelLarge.copyWith(
-                  color: JewelVaultColors.accentGold,
+                style: AppTypography.labelLarge.copyWith(
+                  color: AppColors.accentGold,
                 ),
               ),
               const SizedBox(width: 6),
               const Icon(
                 Icons.arrow_forward,
-                color: JewelVaultColors.accentGold,
+                color: AppColors.accentGold,
                 size: 16,
               ),
             ],
@@ -1219,7 +1163,7 @@ class _PairChip extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           item.title,
-          style: JewelVaultTypography.labelLarge.copyWith(
+          style: AppTypography.labelLarge.copyWith(
             color: Colors.white,
             fontSize: 12,
           ),
@@ -1239,9 +1183,9 @@ class _RecentlyAddedCard extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(24),
     decoration: BoxDecoration(
-      color: JewelVaultColors.surface,
+      color: AppColors.surface,
       borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: JewelVaultColors.border),
+      border: Border.all(color: AppColors.border),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1249,13 +1193,13 @@ class _RecentlyAddedCard extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Recently Added', style: JewelVaultTypography.headingSmall),
+            Text('Recently Added', style: AppTypography.headingSmall),
             GestureDetector(
               onTap: onViewAll,
               child: Text(
                 'View All',
-                style: JewelVaultTypography.labelSmall.copyWith(
-                  color: JewelVaultColors.primaryEmerald,
+                style: AppTypography.labelSmall.copyWith(
+                  color: AppColors.primaryEmerald,
                 ),
               ),
             ),
@@ -1277,7 +1221,7 @@ class _RecentlyAddedCard extends StatelessWidget {
                   child: Icon(
                     item.icon,
                     size: 20,
-                    color: JewelVaultColors.primaryEmerald,
+                    color: AppColors.primaryEmerald,
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -1287,13 +1231,13 @@ class _RecentlyAddedCard extends StatelessWidget {
                     children: [
                       Text(
                         item.title,
-                        style: JewelVaultTypography.labelLarge,
+                        style: AppTypography.labelLarge,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
                         item.brand,
-                        style: JewelVaultTypography.bodyMedium.copyWith(
+                        style: AppTypography.bodyMedium.copyWith(
                           fontSize: 11,
                         ),
                       ),
@@ -1394,9 +1338,9 @@ class _InsightTile extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
-      color: JewelVaultColors.surface,
+      color: AppColors.surface,
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: JewelVaultColors.border),
+      border: Border.all(color: AppColors.border),
     ),
     child: Row(
       children: [
@@ -1406,7 +1350,7 @@ class _InsightTile extends StatelessWidget {
             color: color,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, size: 20, color: JewelVaultColors.primaryEmerald),
+          child: Icon(icon, size: 20, color: AppColors.primaryEmerald),
         ),
         const SizedBox(width: 14),
         Expanded(
@@ -1415,20 +1359,20 @@ class _InsightTile extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: JewelVaultTypography.labelSmall.copyWith(
+                style: AppTypography.labelSmall.copyWith(
                   letterSpacing: 0.8,
                 ),
               ),
               const SizedBox(height: 3),
               Text(
                 value,
-                style: JewelVaultTypography.labelLarge,
+                style: AppTypography.labelLarge,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
               Text(
                 sub,
-                style: JewelVaultTypography.bodyMedium.copyWith(fontSize: 11),
+                style: AppTypography.bodyMedium.copyWith(fontSize: 11),
               ),
             ],
           ),
@@ -1453,18 +1397,18 @@ class _SeasonBreakdown extends StatelessWidget {
             margin: const EdgeInsets.only(right: 10),
             padding: const EdgeInsets.symmetric(vertical: 16),
             decoration: BoxDecoration(
-              color: JewelVaultColors.surface,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: JewelVaultColors.border),
+              border: Border.all(color: AppColors.border),
             ),
             child: Column(
               children: [
                 Text(_seasonEmoji(s), style: const TextStyle(fontSize: 20)),
                 const SizedBox(height: 8),
-                Text('$count', style: JewelVaultTypography.headingSmall),
+                Text('$count', style: AppTypography.headingSmall),
                 Text(
                   s,
-                  style: JewelVaultTypography.bodyMedium.copyWith(fontSize: 11),
+                  style: AppTypography.bodyMedium.copyWith(fontSize: 11),
                 ),
               ],
             ),
@@ -1560,11 +1504,11 @@ class _ClosetViewState extends State<_ClosetView> {
                   children: [
                     Text(
                       'My Vault Closet',
-                      style: JewelVaultTypography.headingLarge,
+                      style: AppTypography.headingLarge,
                     ),
                     Text(
                       '${filtered.length} of ${widget.items.length} pieces',
-                      style: JewelVaultTypography.bodyMedium,
+                      style: AppTypography.bodyMedium,
                     ),
                   ],
                 ),
@@ -1576,15 +1520,15 @@ class _ClosetViewState extends State<_ClosetView> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: JewelVaultColors.surface,
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: JewelVaultColors.border),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: DropdownButton<String>(
                   value: _sortBy,
                   isDense: true,
                   underline: const SizedBox(),
-                  style: JewelVaultTypography.labelLarge,
+                  style: AppTypography.labelLarge,
                   items: ['Match', 'Worn', 'Name']
                       .map(
                         (s) =>
@@ -1605,27 +1549,27 @@ class _ClosetViewState extends State<_ClosetView> {
             onChanged: (v) => setState(() => _searchQuery = v),
             decoration: InputDecoration(
               hintText: 'Search by name or brand…',
-              hintStyle: JewelVaultTypography.bodyMedium,
+              hintStyle: AppTypography.bodyMedium,
               prefixIcon: const Icon(
                 Icons.search,
-                color: JewelVaultColors.mutedText,
+                color: AppColors.mutedText,
                 size: 20,
               ),
               filled: true,
-              fillColor: JewelVaultColors.surface,
+              fillColor: AppColors.surface,
               contentPadding: const EdgeInsets.symmetric(vertical: 14),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: JewelVaultColors.border),
+                borderSide: const BorderSide(color: AppColors.border),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: JewelVaultColors.border),
+                borderSide: const BorderSide(color: AppColors.border),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
-                  color: JewelVaultColors.primaryEmerald,
+                  color: AppColors.primaryEmerald,
                 ),
               ),
             ),
@@ -1651,21 +1595,21 @@ class _ClosetViewState extends State<_ClosetView> {
                     ),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? JewelVaultColors.primaryEmerald
-                          : JewelVaultColors.surface,
+                          ? AppColors.primaryEmerald
+                          : AppColors.surface,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: isSelected
-                            ? JewelVaultColors.primaryEmerald
-                            : JewelVaultColors.border,
+                            ? AppColors.primaryEmerald
+                            : AppColors.border,
                       ),
                     ),
                     child: Text(
                       cat,
-                      style: JewelVaultTypography.labelLarge.copyWith(
+                      style: AppTypography.labelLarge.copyWith(
                         color: isSelected
                             ? Colors.white
-                            : JewelVaultColors.secondaryText,
+                            : AppColors.secondaryText,
                         fontSize: 12,
                       ),
                     ),
@@ -1687,14 +1631,14 @@ class _ClosetViewState extends State<_ClosetView> {
                     children: [
                       Icon(
                         Icons.search_off,
-                        color: JewelVaultColors.border,
+                        color: AppColors.border,
                         size: 48,
                       ),
                       const SizedBox(height: 12),
                       Text(
                         'No items found',
-                        style: JewelVaultTypography.headingSmall.copyWith(
-                          color: JewelVaultColors.mutedText,
+                        style: AppTypography.headingSmall.copyWith(
+                          color: AppColors.mutedText,
                         ),
                       ),
                     ],
@@ -1732,9 +1676,9 @@ class _ItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     decoration: BoxDecoration(
-      color: JewelVaultColors.surface,
+      color: AppColors.surface,
       borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: JewelVaultColors.border),
+      border: Border.all(color: AppColors.border),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1753,7 +1697,7 @@ class _ItemCard extends StatelessWidget {
                   child: Icon(
                     item.icon,
                     size: 36,
-                    color: JewelVaultColors.primaryEmerald.withOpacity(0.4),
+                    color: AppColors.primaryEmerald.withOpacity(0.4),
                   ),
                 ),
                 // Match badge
@@ -1766,7 +1710,7 @@ class _ItemCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: JewelVaultColors.primaryEmerald,
+                      color: AppColors.primaryEmerald,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
@@ -1789,7 +1733,7 @@ class _ItemCard extends StatelessWidget {
                       item.isFavorite ? Icons.favorite : Icons.favorite_border,
                       color: item.isFavorite
                           ? Colors.redAccent
-                          : JewelVaultColors.mutedText,
+                          : AppColors.mutedText,
                       size: 18,
                     ),
                   ),
@@ -1806,14 +1750,14 @@ class _ItemCard extends StatelessWidget {
             children: [
               Text(
                 item.title,
-                style: JewelVaultTypography.labelLarge,
+                style: AppTypography.labelLarge,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 2),
               Text(
                 item.brand,
-                style: JewelVaultTypography.bodyMedium.copyWith(fontSize: 11),
+                style: AppTypography.bodyMedium.copyWith(fontSize: 11),
               ),
               const SizedBox(height: 6),
               Row(
@@ -1823,12 +1767,12 @@ class _ItemCard extends StatelessWidget {
                   Icon(
                     Icons.repeat,
                     size: 11,
-                    color: JewelVaultColors.mutedText,
+                    color: AppColors.mutedText,
                   ),
                   const SizedBox(width: 3),
                   Text(
                     '${item.wornCount}×',
-                    style: JewelVaultTypography.mono.copyWith(fontSize: 10),
+                    style: AppTypography.mono.copyWith(fontSize: 10),
                   ),
                 ],
               ),
@@ -1853,9 +1797,9 @@ class _CategoryTag extends StatelessWidget {
     ),
     child: Text(
       category,
-      style: JewelVaultTypography.labelSmall.copyWith(
+      style: AppTypography.labelSmall.copyWith(
         fontSize: 9,
-        color: JewelVaultColors.primaryEmerald,
+        color: AppColors.primaryEmerald,
         letterSpacing: 0.5,
       ),
     ),
@@ -1865,13 +1809,13 @@ class _CategoryTag extends StatelessWidget {
 Color _categoryColor(String cat) {
   switch (cat) {
     case 'Jewelry':
-      return JewelVaultColors.tagJewelry;
+      return AppColors.tagJewelry;
     case 'Bag':
-      return JewelVaultColors.tagBag;
+      return AppColors.tagBag;
     case 'Accessory':
-      return JewelVaultColors.tagAccessory;
+      return AppColors.tagAccessory;
     default:
-      return JewelVaultColors.tagGarment;
+      return AppColors.tagGarment;
   }
 }
 
@@ -1910,10 +1854,10 @@ class _OutfitsView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('AI Outfit Lookbook', style: JewelVaultTypography.headingLarge),
+          Text('AI Outfit Lookbook', style: AppTypography.headingLarge),
           Text(
             'Smart pairings curated from your closet.',
-            style: JewelVaultTypography.bodyMedium,
+            style: AppTypography.bodyMedium,
           ),
           const SizedBox(height: 28),
           LayoutBuilder(
@@ -1970,9 +1914,9 @@ class _OutfitCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: JewelVaultColors.surface,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: JewelVaultColors.border),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1982,7 +1926,7 @@ class _OutfitCard extends StatelessWidget {
             children: [
               Text(
                 'Outfit $outfitIndex',
-                style: JewelVaultTypography.headingSmall,
+                style: AppTypography.headingSmall,
               ),
               _MatchBadge(score: avgMatch),
             ],
@@ -2006,7 +1950,7 @@ class _OutfitCard extends StatelessWidget {
                           children: [
                             Icon(
                               item.icon,
-                              color: JewelVaultColors.primaryEmerald,
+                              color: AppColors.primaryEmerald,
                               size: 22,
                             ),
                             const SizedBox(height: 6),
@@ -2016,7 +1960,7 @@ class _OutfitCard extends StatelessWidget {
                               ),
                               child: Text(
                                 item.title,
-                                style: JewelVaultTypography.labelSmall.copyWith(
+                                style: AppTypography.labelSmall.copyWith(
                                   fontSize: 9,
                                 ),
                                 textAlign: TextAlign.center,
@@ -2047,16 +1991,16 @@ class _MatchBadge extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
     decoration: BoxDecoration(
       color: score >= 90
-          ? JewelVaultColors.primaryEmerald.withOpacity(0.1)
-          : JewelVaultColors.accentGoldLight,
+          ? AppColors.primaryEmerald.withOpacity(0.1)
+          : AppColors.accentGoldLight,
       borderRadius: BorderRadius.circular(20),
     ),
     child: Text(
       '${score.toInt()}% match',
-      style: JewelVaultTypography.labelSmall.copyWith(
+      style: AppTypography.labelSmall.copyWith(
         color: score >= 90
-            ? JewelVaultColors.primaryEmerald
-            : JewelVaultColors.accentGold,
+            ? AppColors.primaryEmerald
+            : AppColors.accentGold,
         letterSpacing: 0.3,
       ),
     ),
@@ -2107,7 +2051,7 @@ class _AddItemViewState extends State<_AddItemView> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('"$_title" has been added to your vault.'),
-          backgroundColor: JewelVaultColors.primaryEmerald,
+          backgroundColor: AppColors.primaryEmerald,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
@@ -2120,24 +2064,24 @@ class _AddItemViewState extends State<_AddItemView> {
   InputDecoration _fieldDecoration(String label, {IconData? icon}) =>
       InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: JewelVaultColors.secondaryText),
+        labelStyle: TextStyle(color: AppColors.secondaryText),
         prefixIcon: icon != null
-            ? Icon(icon, color: JewelVaultColors.mutedText, size: 20)
+            ? Icon(icon, color: AppColors.mutedText, size: 20)
             : null,
         filled: true,
-        fillColor: JewelVaultColors.surface,
+        fillColor: AppColors.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: JewelVaultColors.border),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: JewelVaultColors.border),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(
-            color: JewelVaultColors.primaryEmerald,
+            color: AppColors.primaryEmerald,
             width: 1.5,
           ),
         ),
@@ -2152,10 +2096,10 @@ class _AddItemViewState extends State<_AddItemView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Catalog New Piece', style: JewelVaultTypography.headingLarge),
+            Text('Catalog New Piece', style: AppTypography.headingLarge),
             Text(
               'Add a new item to your digital vault.',
-              style: JewelVaultTypography.bodyMedium,
+              style: AppTypography.bodyMedium,
             ),
             const SizedBox(height: 28),
 
@@ -2164,10 +2108,10 @@ class _AddItemViewState extends State<_AddItemView> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 40),
               decoration: BoxDecoration(
-                color: JewelVaultColors.surface,
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: JewelVaultColors.border,
+                  color: AppColors.border,
                   style: BorderStyle.solid,
                 ),
               ),
@@ -2176,21 +2120,21 @@ class _AddItemViewState extends State<_AddItemView> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: const BoxDecoration(
-                      color: JewelVaultColors.accentGoldLight,
+                      color: AppColors.accentGoldLight,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.cloud_upload_outlined,
-                      color: JewelVaultColors.accentGold,
+                      color: AppColors.accentGold,
                       size: 28,
                     ),
                   ),
                   const SizedBox(height: 14),
-                  Text('Upload Photo', style: JewelVaultTypography.labelLarge),
+                  Text('Upload Photo', style: AppTypography.labelLarge),
                   const SizedBox(height: 4),
                   Text(
                     'Drag & drop or tap to browse  ·  PNG, JPG',
-                    style: JewelVaultTypography.bodyMedium.copyWith(
+                    style: AppTypography.bodyMedium.copyWith(
                       fontSize: 12,
                     ),
                   ),
@@ -2209,8 +2153,8 @@ class _AddItemViewState extends State<_AddItemView> {
                       'Item Name *',
                       icon: Icons.label_outline,
                     ),
-                    style: JewelVaultTypography.bodyMedium.copyWith(
-                      color: JewelVaultColors.primaryText,
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.primaryText,
                     ),
                     validator: (v) =>
                         v == null || v.isEmpty ? 'Please enter a name' : null,
@@ -2222,8 +2166,8 @@ class _AddItemViewState extends State<_AddItemView> {
                       'Brand (optional)',
                       icon: Icons.storefront_outlined,
                     ),
-                    style: JewelVaultTypography.bodyMedium.copyWith(
-                      color: JewelVaultColors.primaryText,
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.primaryText,
                     ),
                     onChanged: (v) => _brand = v,
                   ),
@@ -2233,8 +2177,8 @@ class _AddItemViewState extends State<_AddItemView> {
                       'Primary Color',
                       icon: Icons.palette_outlined,
                     ),
-                    style: JewelVaultTypography.bodyMedium.copyWith(
-                      color: JewelVaultColors.primaryText,
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.primaryText,
                     ),
                     onChanged: (v) => _color = v,
                   ),
@@ -2242,8 +2186,8 @@ class _AddItemViewState extends State<_AddItemView> {
                   DropdownButtonFormField<String>(
                     value: _category,
                     decoration: _fieldDecoration('Category'),
-                    style: JewelVaultTypography.bodyMedium.copyWith(
-                      color: JewelVaultColors.primaryText,
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.primaryText,
                     ),
                     items: ['Garment', 'Jewelry', 'Bag', 'Accessory']
                         .map((c) => DropdownMenuItem(value: c, child: Text(c)))
@@ -2255,8 +2199,8 @@ class _AddItemViewState extends State<_AddItemView> {
                   DropdownButtonFormField<String>(
                     value: _season,
                     decoration: _fieldDecoration('Season'),
-                    style: JewelVaultTypography.bodyMedium.copyWith(
-                      color: JewelVaultColors.primaryText,
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.primaryText,
                     ),
                     items: ['All', 'Summer', 'Winter', 'Autumn', 'Spring']
                         .map((s) => DropdownMenuItem(value: s, child: Text(s)))
@@ -2267,13 +2211,13 @@ class _AddItemViewState extends State<_AddItemView> {
                   ElevatedButton(
                     onPressed: _submit,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: JewelVaultColors.primaryEmerald,
+                      backgroundColor: AppColors.primaryEmerald,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 18),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      textStyle: JewelVaultTypography.labelLarge,
+                      textStyle: AppTypography.labelLarge,
                       elevation: 0,
                     ),
                     child: const Text('Save to Vault'),

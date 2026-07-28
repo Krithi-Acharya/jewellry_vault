@@ -24,8 +24,8 @@ class ApiService {
           ];
 
           if (!publicEndpoints.contains(options.path)) {
-            // Use the token cached in this session
-            final token = AuthService.instance.currentSessionToken;
+            // Fetch the token directly from Firebase to ensure hot reloads work
+            final token = await AuthService.instance.getIdToken();
             if (token != null) {
               options.headers['Authorization'] = 'Bearer $token';
             }
