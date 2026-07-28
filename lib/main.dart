@@ -2,11 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'landing_page.dart';
+import 'core/theme/app_theme.dart';
+
+import 'presentation/closet/providers/closet_provider.dart';
+import 'presentation/closet/screens/closet_screen.dart';
+import 'presentation/closet/upload/upload_screen.dart';
+import 'presentation/closet/screens/processing_screen.dart';
+
+import 'presentation/closet/screens/item_details_screen.dart';
+import 'presentation/closet/screens/metadata_review_screen.dart';
+import 'presentation/closet/screens/recommendations_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,7 +29,14 @@ void main() async {
   }
   
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ClosetProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -29,20 +47,44 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Jewel Vault',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1B4332)),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.lightTheme,
 
-      // AuthGate decides the first screen based on login state.
+
       home: const _AuthGate(),
 
-      // Named routes used by Navigator.pushNamed throughout the app
       routes: {
         '/landing': (context) => const LandingPage(),
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
         '/dashboard': (context) => const DashboardScreen(),
+        '/closet': (context) => const ClosetScreen(),
+        '/upload': (context) => const UploadScreen(),
+      },
+
+      onGenerateRoute: (settings) {
+        if (settings.name == '/processing') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => ProcessingScreen(jobId: args['jobId'], itemId: args['itemId']),
+          );
+
+        } else if (settings.name == '/item-details') {
+          final itemId = settings.arguments as int;
+          return MaterialPageRoute(
+            builder: (context) => ItemDetailsScreen(itemId: itemId),
+          );
+        } else if (settings.name == '/metadata-review') {
+          final itemId = settings.arguments as int;
+          return MaterialPageRoute(
+            builder: (context) => MetadataReviewScreen(itemId: itemId),
+          );
+        } else if (settings.name == '/recommendations') {
+          final itemId = settings.arguments as int;
+          return MaterialPageRoute(
+            builder: (context) => RecommendationsScreen(itemId: itemId),
+          );
+        }
+        return null;
       },
     );
   }

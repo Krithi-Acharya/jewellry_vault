@@ -10,7 +10,10 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+  // formKey checks if the email field is filled correctly
   final formKey = GlobalKey<FormState>();
+
+  // Reads what the user types
   final emailController = TextEditingController();
 
   // Controls loading state
@@ -22,17 +25,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.dispose();
   }
 
+  // Runs when user taps Send Reset Link
   void resetPassword() async {
+    // Check if field is valid
     if (!formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
+      // Send reset email using AuthService
       await AuthService.instance.sendPasswordResetEmail(
         emailController.text.trim(),
       );
 
       if (!context.mounted) return;
+      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Password reset email sent! Check your inbox.'),
@@ -48,9 +55,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         message = 'No user found for that email.';
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -65,90 +72,104 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    bool isBigScreen = screenWidth > 700;
-    double formWidth = isBigScreen ? 400 : double.infinity;
-
     return Scaffold(
       backgroundColor: const Color(0xFFFCF9F4),
+
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFFCF9F4),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF1B4332)),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
-          child: SizedBox(
-            width: formWidth,
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.lock_reset,
-                    size: 70,
-                    color: Color(0xFF1B4332),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Reset Password',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1815),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Enter your email and we\'ll send you a link to reset your password',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.black54),
-                  ),
-                  const SizedBox(height: 32),
-                  TextFormField(
-                    controller: emailController,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.email),
-                    ),
-                    validator: (value) {
-                      if (value!.isEmpty) return 'Please enter your email';
-                      if (!value.contains('@')) return 'Enter a valid email';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : resetPassword,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1B4332),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Text('Send Reset Link'),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon instead of logo, since this isn't the main entry screen
+                const Icon(
+                  Icons.lock_reset,
+                  size: 70,
+                  color: Color(0xFF1B4332),
+                ),
+                const SizedBox(height: 16),
 
-                  // Back to login link
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      'Back to Login',
-                      style: TextStyle(color: Color(0xFF1B4332)),
-                    ),
+                // Title
+                const Text(
+                  'Reset Password',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A1815),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 8),
+
+                // Subtitle
+                const Text(
+                  'Enter your email to receive a reset link',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Color(0xFF6B6258)),
+                ),
+                const SizedBox(height: 32),
+
+                // Email field with validation
+                TextFormField(
+                  controller: emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.email),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your email';
+                    }
+                    if (!value.contains('@')) return 'Enter a valid email';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+
+                // Send reset link button (full width)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : resetPassword,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1B4332),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text('Send Reset Link'),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Back to login link
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    'Back to Login',
+                    style: TextStyle(color: Color(0xFF1B4332)),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

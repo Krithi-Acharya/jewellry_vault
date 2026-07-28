@@ -154,11 +154,15 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     // Stronger rule set from the newer version: length + mixed case + digit
                     validator: (value) {
-                      if (value == null || value.isEmpty) return 'Please enter your password';
+                      if (value == null || value.isEmpty)
+                        return 'Please enter your password';
                       if (value.length < 8) return 'Minimum 8 characters';
-                      if (!value.contains(RegExp(r'[A-Z]'))) return 'Must contain at least one uppercase letter';
-                      if (!value.contains(RegExp(r'[a-z]'))) return 'Must contain at least one lowercase letter';
-                      if (!value.contains(RegExp(r'[0-9]'))) return 'Must contain at least one number';
+                      if (!value.contains(RegExp(r'[A-Z]')))
+                        return 'Must contain at least one uppercase letter';
+                      if (!value.contains(RegExp(r'[a-z]')))
+                        return 'Must contain at least one lowercase letter';
+                      if (!value.contains(RegExp(r'[0-9]')))
+                        return 'Must contain at least one number';
                       return null;
                     },
                   ),

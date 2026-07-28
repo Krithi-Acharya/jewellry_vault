@@ -1,0 +1,220 @@
+-- ==============================================================================
+-- JewelVault Database Schema
+-- ==============================================================================
+
+-- ------------------------------------------------------------------------------
+-- 1. USERS & PREFERENCES
+-- ------------------------------------------------------------------------------
+
+CREATE TABLE USERS (
+    usr_id SERIAL PRIMARY KEY,
+    usr_firebase_uid VARCHAR(255) UNIQUE,
+    usr_email VARCHAR(255) UNIQUE NOT NULL,
+    usr_phone_number VARCHAR(50) UNIQUE,
+    usr_password_hash VARCHAR(255),
+    usr_gender VARCHAR(50)
+);
+
+CREATE TABLE USER_AUTH_PROVIDERS (
+    uap_id SERIAL PRIMARY KEY,
+    uap_usr_id INTEGER NOT NULL REFERENCES USERS(usr_id) ON DELETE CASCADE,
+    uap_provider VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE USER_STYLING_PROFILES (
+    usp_id SERIAL PRIMARY KEY,
+    usp_usr_id INTEGER UNIQUE NOT NULL REFERENCES USERS(usr_id) ON DELETE CASCADE,
+    usp_skin_undertone VARCHAR(100)
+);
+
+CREATE TABLE USER_PREFERENCE_VECTORS (
+    upv_id SERIAL PRIMARY KEY,
+    upv_usr_id INTEGER UNIQUE NOT NULL REFERENCES USERS(usr_id) ON DELETE CASCADE,
+    upv_weights JSONB
+);
+
+CREATE TABLE STYLE_PREFERENCE_TYPES (
+    spt_id SERIAL PRIMARY KEY,
+    spt_name VARCHAR(100) UNIQUE NOT NULL
+);
+
+CREATE TABLE USER_STYLE_PREFERENCES (
+    usp2_id SERIAL PRIMARY KEY,
+    usp2_usr_id INTEGER NOT NULL REFERENCES USERS(usr_id) ON DELETE CASCADE,
+    usp2_spt_id INTEGER NOT NULL REFERENCES STYLE_PREFERENCE_TYPES(spt_id) ON DELETE CASCADE
+);
+
+-- ------------------------------------------------------------------------------
+-- 2. LOOKUP TABLES (Types & Categories)
+-- ------------------------------------------------------------------------------
+
+CREATE TABLE ITEM_CATEGORIES (
+    itc_id SERIAL PRIMARY KEY,
+    itc_name VARCHAR(100) UNIQUE NOT NULL
+);
+
+CREATE TABLE NECKLINE_TYPES (
+    nkt_id SERIAL PRIMARY KEY,
+    nkt_name VARCHAR(100) UNIQUE NOT NULL
+);
+
+CREATE TABLE FABRIC_TYPES (
+    fbt_id SERIAL PRIMARY KEY,
+    fbt_name VARCHAR(100) UNIQUE NOT NULL
+);
+
+CREATE TABLE METAL_TYPES (
+    mtt_id SERIAL PRIMARY KEY,
+    mtt_name VARCHAR(100) UNIQUE NOT NULL
+);
+
+CREATE TABLE GEMSTONE_TYPES (
+    gst_id SERIAL PRIMARY KEY,
+    gst_name VARCHAR(100) UNIQUE NOT NULL
+);
+
+CREATE TABLE EVENT_CATEGORIES (
+    evc_id SERIAL PRIMARY KEY,
+    evc_name VARCHAR(100) UNIQUE NOT NULL
+);
+
+-- ------------------------------------------------------------------------------
+-- 3. CLOSET & ITEMS
+-- ------------------------------------------------------------------------------
+
+CREATE TABLE CLOSET_ITEMS (
+    ci_id SERIAL PRIMARY KEY,
+    ci_usr_id INTEGER NOT NULL REFERENCES USERS(usr_id) ON DELETE CASCADE,
+    ci_category_id INTEGER NOT NULL REFERENCES ITEM_CATEGORIES(itc_id) ON DELETE RESTRICT,
+    ci_status VARCHAR(50) DEFAULT 'ACTIVE'
+);
+
+CREATE TABLE CLOSET_ITEM_IMAGES (
+    cii_id SERIAL PRIMARY KEY,
+    cii_ci_id INTEGER NOT NULL REFERENCES CLOSET_ITEMS(ci_id) ON DELETE CASCADE,
+    cii_url TEXT NOT NULL
+);
+
+CREATE TABLE ITEM_UPLOAD_JOBS (
+    iuj_id SERIAL PRIMARY KEY,
+    iuj_ci_id INTEGER NOT NULL REFERENCES CLOSET_ITEMS(ci_id) ON DELETE CASCADE,
+    iuj_status VARCHAR(50)
+);
+
+CREATE TABLE CLOSET_ITEM_AI_TAGS (
+    ciaitag_id SERIAL PRIMARY KEY,
+    ciaitag_ci_id INTEGER UNIQUE NOT NULL REFERENCES CLOSET_ITEMS(ci_id) ON DELETE CASCADE,
+    ciaitag_reviewed_by INTEGER REFERENCES USERS(usr_id) ON DELETE SET NULL,
+    ciaitag_tags JSONB
+);
+
+CREATE TABLE CLOSET_ITEM_ATTRIBUTES (
+    ciattr_id SERIAL PRIMARY KEY,
+    ciattr_ci_id INTEGER UNIQUE NOT NULL REFERENCES CLOSET_ITEMS(ci_id) ON DELETE CASCADE,
+    ciattr_neckline_type_id INTEGER REFERENCES NECKLINE_TYPES(nkt_id) ON DELETE SET NULL,
+    ciattr_fabric_type_id INTEGER REFERENCES FABRIC_TYPES(fbt_id) ON DELETE SET NULL,
+    ciattr_metal_type_id INTEGER REFERENCES METAL_TYPES(mtt_id) ON DELETE SET NULL,
+    ciattr_gemstone_type_id INTEGER REFERENCES GEMSTONE_TYPES(gst_id) ON DELETE SET NULL
+);
+
+-- ------------------------------------------------------------------------------
+-- 4. COLLECTIONS & LOOKBOOKS
+-- ------------------------------------------------------------------------------
+
+CREATE TABLE COLLECTIONS (
+    col_id SERIAL PRIMARY KEY,
+    col_usr_id INTEGER NOT NULL REFERENCES USERS(usr_id) ON DELETE CASCADE,
+    col_name VARCHAR(255)
+);
+
+CREATE TABLE COLLECTION_ITEMS (
+    coli_id SERIAL PRIMARY KEY,
+    coli_col_id INTEGER NOT NULL REFERENCES COLLECTIONS(col_id) ON DELETE CASCADE,
+    coli_ci_id INTEGER NOT NULL REFERENCES CLOSET_ITEMS(ci_id) ON DELETE CASCADE
+);
+
+CREATE TABLE LOOKBOOKS (
+    lb_id SERIAL PRIMARY KEY,
+    lb_usr_id INTEGER NOT NULL REFERENCES USERS(usr_id) ON DELETE CASCADE,
+    lb_name VARCHAR(255)
+);
+
+CREATE TABLE LOOKBOOK_ITEMS (
+    lbi_id SERIAL PRIMARY KEY,
+    lbi_lb_id INTEGER NOT NULL REFERENCES LOOKBOOKS(lb_id) ON DELETE CASCADE,
+    lbi_ci_id INTEGER NOT NULL REFERENCES CLOSET_ITEMS(ci_id) ON DELETE CASCADE
+);
+
+-- ------------------------------------------------------------------------------
+-- 5. RECOMMENDATIONS & AUDITS
+-- ------------------------------------------------------------------------------
+
+CREATE TABLE AUDIT_LOGS (
+    adl_id SERIAL PRIMARY KEY,
+    adl_actor_usr_id INTEGER NOT NULL REFERENCES USERS(usr_id) ON DELETE CASCADE,
+    adl_action VARCHAR(255) NOT NULL,
+    adl_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE NOTIFICATIONS (
+    ntf_id SERIAL PRIMARY KEY,
+    ntf_usr_id INTEGER NOT NULL REFERENCES USERS(usr_id) ON DELETE CASCADE,
+    ntf_type VARCHAR(100) NOT NULL,
+    ntf_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE RECOMMENDATION_ENGINE_RULES (
+    rer_id SERIAL PRIMARY KEY,
+    rer_neckline_type_id INTEGER REFERENCES NECKLINE_TYPES(nkt_id) ON DELETE CASCADE,
+    rer_jewelry_category_id INTEGER REFERENCES ITEM_CATEGORIES(itc_id) ON DELETE CASCADE,
+    rer_event_category_id INTEGER REFERENCES EVENT_CATEGORIES(evc_id) ON DELETE CASCADE
+);
+
+CREATE TABLE RECOMMENDATION_QUERIES (
+    rq_id SERIAL PRIMARY KEY,
+    rq_usr_id INTEGER NOT NULL REFERENCES USERS(usr_id) ON DELETE CASCADE,
+    rq_event_category_id INTEGER REFERENCES EVENT_CATEGORIES(evc_id) ON DELETE SET NULL,
+    rq_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE RECOMMENDATION_APPAREL_SUGGESTIONS (
+    ras_id SERIAL PRIMARY KEY,
+    ras_rq_id INTEGER NOT NULL REFERENCES RECOMMENDATION_QUERIES(rq_id) ON DELETE CASCADE,
+    ras_ci_id INTEGER NOT NULL REFERENCES CLOSET_ITEMS(ci_id) ON DELETE CASCADE
+);
+
+CREATE TABLE RECOMMENDATION_JEWELRY_SUGGESTIONS (
+    rjs_id SERIAL PRIMARY KEY,
+    rjs_ras_id INTEGER NOT NULL REFERENCES RECOMMENDATION_APPAREL_SUGGESTIONS(ras_id) ON DELETE CASCADE,
+    rjs_ci_id INTEGER NOT NULL REFERENCES CLOSET_ITEMS(ci_id) ON DELETE CASCADE
+);
+
+CREATE TABLE RECOMMENDATION_FEEDBACK (
+    rf_id SERIAL PRIMARY KEY,
+    rf_usr_id INTEGER NOT NULL REFERENCES USERS(usr_id) ON DELETE CASCADE,
+    rf_ras_id INTEGER REFERENCES RECOMMENDATION_APPAREL_SUGGESTIONS(ras_id) ON DELETE CASCADE,
+    rf_rjs_id INTEGER REFERENCES RECOMMENDATION_JEWELRY_SUGGESTIONS(rjs_id) ON DELETE CASCADE,
+    rf_rating INTEGER
+);
+
+CREATE TABLE SAVED_OUTFITS (
+    so_id SERIAL PRIMARY KEY,
+    so_usr_id INTEGER NOT NULL REFERENCES USERS(usr_id) ON DELETE CASCADE,
+    so_rq_id INTEGER REFERENCES RECOMMENDATION_QUERIES(rq_id) ON DELETE SET NULL,
+    so_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE SAVED_OUTFIT_ITEMS (
+    soi_id SERIAL PRIMARY KEY,
+    soi_so_id INTEGER NOT NULL REFERENCES SAVED_OUTFITS(so_id) ON DELETE CASCADE,
+    soi_ci_id INTEGER NOT NULL REFERENCES CLOSET_ITEMS(ci_id) ON DELETE CASCADE,
+    soi_role VARCHAR(100)
+);
+
+CREATE TABLE OUTFIT_WEAR_LOG (
+    owl_id SERIAL PRIMARY KEY,
+    owl_usr_id INTEGER NOT NULL REFERENCES USERS(usr_id) ON DELETE CASCADE,
+    owl_so_id INTEGER NOT NULL REFERENCES SAVED_OUTFITS(so_id) ON DELETE CASCADE,
+    owl_event_category_id INTEGER REFERENCES EVENT_CATEGORIES(evc_id) ON DELETE SET NULL,
+    owl_worn_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

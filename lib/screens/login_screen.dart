@@ -36,9 +36,8 @@ class _LoginScreenState extends State<LoginScreen> {
         emailController.text.trim(),
         passwordController.text.trim(),
       );
-      
       if (!context.mounted) return;
-      // Successfully authenticated! Close this login view so the AuthGate 
+      // Successfully authenticated! Close this login view so the AuthGate
       // parent widget can automatically swap to your Dashboard.
       Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
@@ -56,9 +55,9 @@ class _LoginScreenState extends State<LoginScreen> {
           break;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -131,7 +130,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       prefixIcon: const Icon(Icons.lock),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          showPassword ? Icons.visibility : Icons.visibility_off,
+                          showPassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
                         ),
                         onPressed: () =>
                             setState(() => showPassword = !showPassword),
