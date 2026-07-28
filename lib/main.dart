@@ -8,6 +8,8 @@ import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'landing_page.dart';
+import 'screens/profile_screen.dart';
+import 'screens/prompt_screen.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_colors.dart';
 
@@ -15,7 +17,6 @@ import 'presentation/closet/providers/closet_provider.dart';
 import 'presentation/closet/screens/closet_screen.dart';
 import 'presentation/closet/upload/upload_screen.dart';
 import 'presentation/closet/screens/processing_screen.dart';
-
 import 'presentation/closet/screens/item_details_screen.dart';
 import 'presentation/closet/screens/metadata_review_screen.dart';
 import 'presentation/closet/screens/recommendations_screen.dart';
@@ -24,13 +25,13 @@ import 'services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   try {
     await dotenv.load(fileName: "app_config.env");
   } catch (e) {
     print('Warning: .env file could not be loaded: $e');
   }
-  
+
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(
     MultiProvider(
@@ -52,7 +53,6 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
 
-
       home: const _AuthGate(),
 
       routes: {
@@ -60,6 +60,8 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
         '/dashboard': (context) => const _RequireAuth(child: DashboardScreen()),
+        '/profile': (context) => const _RequireAuth(child: ProfileScreen()),
+        '/prompt': (context) => const _RequireAuth(child: PromptScreen()),
         '/closet': (context) => const _RequireAuth(child: ClosetScreen()),
         '/upload': (context) => const _RequireAuth(child: UploadScreen()),
         '/admin': (context) => const _RequireAuth(child: _RequireAdmin(child: AdminScreen())),
@@ -76,7 +78,6 @@ class MyApp extends StatelessWidget {
               child: ProcessingScreen(jobId: args['jobId'], itemId: args['itemId']),
             ),
           );
-
         } else if (settings.name == '/item-details') {
           final itemId = settings.arguments;
           if (itemId is! int) return _fallbackRoute();
@@ -124,11 +125,9 @@ class _AuthGate extends StatelessWidget {
         }
 
         if (snapshot.hasData && snapshot.data != null) {
-          // Already signed in: go straight to Dashboard.
           return const DashboardScreen();
         }
 
-        // Not signed in: show the Landing Page first.
         return const LandingPage();
       },
     );

@@ -14,6 +14,16 @@ class _LandingColors {
   static const Color secondaryText = Color(0xFF6B6258);
 }
 
+// Hero image URLs (free-to-use Unsplash photos, no attribution required).
+// Swap these for your own asset paths later if you'd rather bundle the
+// images locally — see the note at the bottom of this file.
+class _HeroImages {
+  static const String dress =
+      'https://images.unsplash.com/photo-1704775990248-4c1c1a276b4f?fm=jpg&q=80&w=800&auto=format&fit=crop';
+  static const String pendant =
+      'https://images.unsplash.com/photo-1589674717843-f29fb2b722ca?fm=jpg&q=80&w=800&auto=format&fit=crop';
+}
+
 class _LandingTypography {
   static TextStyle displayMassive = GoogleFonts.fraunces(
     fontSize: 84,
@@ -65,7 +75,7 @@ class _LandingTypography {
     color: _LandingColors.secondaryText,
     height: 1.6,
   );
-  
+
   static TextStyle labelLarge = GoogleFonts.inter(
     fontSize: 14,
     fontWeight: FontWeight.w500,
@@ -142,7 +152,7 @@ class _NavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 800;
-    
+
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isDesktop ? 80 : 24,
@@ -270,7 +280,7 @@ class _HeroSection extends StatelessWidget {
     final width = MediaQuery.of(context).size.width;
     final height = MediaQuery.of(context).size.height;
     final isDesktop = width > 1000;
-    
+
     final textContent = ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 600),
       child: Column(
@@ -357,12 +367,15 @@ class _HeroSection extends StatelessWidget {
                   Expanded(
                     child: Container(
                       margin: const EdgeInsets.all(12),
+                      clipBehavior: Clip.antiAlias,
                       decoration: BoxDecoration(
                         color: _LandingColors.background,
                         borderRadius: BorderRadius.circular(24),
                       ),
-                      child: const Center(
-                        child: Icon(Icons.checkroom_outlined, size: 64, color: _LandingColors.border),
+                      child: Image.network(
+                        _HeroImages.dress,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Icon(Icons.checkroom_outlined, size: 64, color: _LandingColors.border),
                       ),
                     ),
                   ),
@@ -381,7 +394,7 @@ class _HeroSection extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Floating Jewellryry Card
           Positioned(
             left: isDesktop ? 0 : 10,
@@ -411,12 +424,15 @@ class _HeroSection extends StatelessWidget {
                       Expanded(
                         child: Container(
                           margin: const EdgeInsets.all(8),
+                          clipBehavior: Clip.antiAlias,
                           decoration: BoxDecoration(
                             color: _LandingColors.background.withOpacity(0.5),
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: const Center(
-                            child: Icon(Icons.diamond_outlined, size: 48, color: _LandingColors.primaryEmerald),
+                          child: Image.network(
+                            _HeroImages.pendant,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(Icons.diamond_outlined, size: 48, color: _LandingColors.border),
                           ),
                         ),
                       ),
@@ -622,7 +638,7 @@ class _FeatureCardState extends State<_FeatureCard> {
           ),
           boxShadow: [
             BoxShadow(
-              color: _isHovered 
+              color: _isHovered
                   ? _LandingColors.primaryEmerald.withOpacity(0.08)
                   : Colors.black.withOpacity(0.03),
               blurRadius: _isHovered ? 40 : 20,
@@ -638,7 +654,7 @@ class _FeatureCardState extends State<_FeatureCard> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: _isHovered 
+                  colors: _isHovered
                       ? [_LandingColors.primaryEmerald, _LandingColors.darkEmerald]
                       : [_LandingColors.background, _LandingColors.background],
                   begin: Alignment.topLeft,
@@ -811,8 +827,8 @@ class _TestimonialSection extends StatelessWidget {
         children: [
           Text(
             'Curated Feedback',
-            style: isDesktop 
-                ? _LandingTypography.displayLarge.copyWith(color: Colors.white) 
+            style: isDesktop
+                ? _LandingTypography.displayLarge.copyWith(color: Colors.white)
                 : _LandingTypography.displayMedium.copyWith(color: Colors.white),
             textAlign: TextAlign.center,
           ),
@@ -858,7 +874,7 @@ class _MockReviewCard extends StatelessWidget {
         children: [
           Row(
             children: List.generate(
-              5, 
+              5,
               (index) => const Icon(Icons.star, color: _LandingColors.border, size: 16)
             ),
           ),
@@ -888,8 +904,8 @@ class _MockReviewCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 100, 
-                    height: 12, 
+                    width: 100,
+                    height: 12,
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(4),
@@ -897,8 +913,8 @@ class _MockReviewCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Container(
-                    width: 60, 
-                    height: 10, 
+                    width: 60,
+                    height: 10,
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
@@ -959,7 +975,7 @@ class _FooterSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 800;
-    
+
     return Container(
       color: _LandingColors.whiteCard,
       padding: EdgeInsets.symmetric(
@@ -1031,3 +1047,4 @@ class _FooterLink extends StatelessWidget {
     );
   }
 }
+

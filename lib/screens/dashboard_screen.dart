@@ -468,7 +468,7 @@ class _SidebarContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
+      stream: FirebaseAuth.instance.userChanges(),
       builder: (context, snapshot) {
         final user = snapshot.data;
         // Prefer the name synced to our own backend - Firebase Auth's own
@@ -548,8 +548,30 @@ class _SidebarContent extends StatelessWidget {
               ),
               Container(height: 1, color: AppColors.border),
               const SizedBox(height: 16),
+              GestureDetector(
+                onTap: () => Navigator.pushNamed(context, '/prompt'),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentGoldLight,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.auto_awesome, color: AppColors.accentGold, size: 20),
+                      const SizedBox(width: 14),
+                      Text(
+                        'Ask AI Stylist',
+                        style: AppTypography.labelLarge.copyWith(color: AppColors.accentGold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
+                onTap: () => Navigator.pushNamed(context, '/profile'),
                 leading: CircleAvatar(
                   radius: 18,
                   backgroundColor: AppColors.accentGoldLight,
