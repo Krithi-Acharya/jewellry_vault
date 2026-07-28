@@ -272,6 +272,27 @@ class _PrimaryButton extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────
+//  HERO SECTION (FIXED)
+//
+//  Bug: on the non-desktop branch, `imageContent`'s Stack was sized to
+//  `width: maxW` — i.e. it stretched to fill whatever width the browser
+//  happened to report. Card sizes were clamped to small percentages of
+//  that width, but the cards themselves were anchored to opposite
+//  corners (pendant -> left:0, dress -> right:0). On an actual phone,
+//  maxW is small, so the corner-anchored cards land close together.
+//  But on a "not quite desktop" viewport (e.g. ~700-950px, which is
+//  exactly what you get when you dock DevTools before it's wide enough
+//  to count as desktop), maxW is big while the cards stay small — so
+//  the empty space between "anchored left" and "anchored right"
+//  stretches out, producing the big gap between the two cards.
+//
+//  Fix: cap the non-desktop card group at a fixed max width
+//  (`groupWidth`), size the cards off that instead of the raw
+//  constraint width, and center the fixed-width group inside whatever
+//  extra horizontal space is available instead of letting it stretch.
+// ─────────────────────────────────────────────
+
 class _HeroSection extends StatelessWidget {
   const _HeroSection();
 
@@ -337,112 +358,78 @@ class _HeroSection extends StatelessWidget {
       ),
     );
 
-    final imageContent = Container(
-      height: isDesktop ? height * 0.8 : 500,
-      constraints: const BoxConstraints(maxHeight: 800, minHeight: 400),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Base Dress Card
-          Positioned(
-            right: isDesktop ? 60 : 20,
-            bottom: isDesktop ? 80 : 40,
-            child: Container(
-              width: isDesktop ? 360 : 280,
-              height: isDesktop ? 480 : 380,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(32),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 40,
-                    offset: const Offset(0, 20),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.all(12),
-                      clipBehavior: Clip.antiAlias,
-                      decoration: BoxDecoration(
-                        color: _LandingColors.background,
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: Image.network(
-                        _HeroImages.dress,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.checkroom_outlined, size: 64, color: _LandingColors.border),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Silk Slip Dress', style: _LandingTypography.headingMedium),
-                        const SizedBox(height: 4),
-                        Text('Evening Wear', style: _LandingTypography.bodyMedium),
-                      ],
-                    ),
-                  )
-                ],
-              ),
-            ),
-          ),
+    final imageContent = LayoutBuilder(
+      builder: (context, constraints) {
+        final maxW = constraints.maxWidth;
 
-          // Floating Jewellryry Card
-          Positioned(
-            left: isDesktop ? 0 : 10,
-            top: isDesktop ? 60 : 20,
-            child: Container(
-              width: isDesktop ? 280 : 220,
-              height: isDesktop ? 320 : 260,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.9),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white, width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: _LandingColors.primaryEmerald.withOpacity(0.08),
-                    blurRadius: 30,
-                    offset: const Offset(-10, 15),
+        // KEY FIX: cap the card-group width on non-desktop so it never
+        // stretches to fill an oversized "mobile" viewport (e.g. a
+        // tablet-width DevTools window). Cards always size themselves
+        // off this capped width instead of the raw available width.
+        final groupWidth = isDesktop ? maxW : maxW.clamp(0.0, 380.0);
+        final stackHeight = (isDesktop ? height * 0.8 : 480.0).clamp(400.0, 800.0);
+
+        final dressWidth = isDesktop ? 360.0 : (groupWidth * 0.62).clamp(160.0, 240.0);
+        final dressHeight = isDesktop ? 480.0 : dressWidth * (380 / 280);
+
+        final pendantWidth = isDesktop ? 280.0 : (groupWidth * 0.52).clamp(140.0, 190.0);
+        final pendantHeight = isDesktop ? 320.0 : pendantWidth * (260 / 220);
+
+        final stack = SizedBox(
+          width: groupWidth,
+          height: stackHeight,
+          child: Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              // Base Dress Card
+              Positioned(
+                right: isDesktop ? 60 : 0,
+                bottom: isDesktop ? 80 : 40,
+                child: Container(
+                  width: dressWidth,
+                  height: dressHeight,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(32),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.06),
+                        blurRadius: 40,
+                        offset: const Offset(0, 20),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Expanded(
                         child: Container(
-                          margin: const EdgeInsets.all(8),
+                          margin: const EdgeInsets.all(12),
                           clipBehavior: Clip.antiAlias,
                           decoration: BoxDecoration(
-                            color: _LandingColors.background.withOpacity(0.5),
-                            borderRadius: BorderRadius.circular(16),
+                            color: _LandingColors.background,
+                            borderRadius: BorderRadius.circular(24),
                           ),
                           child: Image.network(
-                            _HeroImages.pendant,
+                            _HeroImages.dress,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Icon(Icons.diamond_outlined, size: 48, color: _LandingColors.border),
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.checkroom_outlined,
+                              size: 64,
+                              color: _LandingColors.border,
+                            ),
                           ),
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+                        padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Emerald Pendant', style: _LandingTypography.bodyLarge.copyWith(color: _LandingColors.primaryText, fontWeight: FontWeight.w500)),
-                            Text('Perfect Match', style: _LandingTypography.bodyMedium.copyWith(color: _LandingColors.primaryEmerald)),
+                            Text('Silk Slip Dress', style: _LandingTypography.headingMedium),
+                            const SizedBox(height: 4),
+                            Text('Evening Wear', style: _LandingTypography.bodyMedium),
                           ],
                         ),
                       )
@@ -450,38 +437,121 @@ class _HeroSection extends StatelessWidget {
                   ),
                 ),
               ),
-            ),
-          ),
 
-          // AI Match Score Badge
-          Positioned(
-            right: isDesktop ? 20 : 0,
-            top: isDesktop ? 160 : 100,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              decoration: BoxDecoration(
-                color: _LandingColors.primaryEmerald,
-                borderRadius: BorderRadius.circular(32),
-                boxShadow: [
-                  BoxShadow(
-                    color: _LandingColors.primaryEmerald.withOpacity(0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
+              // Floating Jewellryry Card
+              Positioned(
+                left: 0,
+                top: isDesktop ? 60 : 20,
+                child: Container(
+                  width: pendantWidth,
+                  height: pendantHeight,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _LandingColors.primaryEmerald.withOpacity(0.08),
+                        blurRadius: 30,
+                        offset: const Offset(-10, 15),
+                      ),
+                    ],
                   ),
-                ],
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: Container(
+                              margin: const EdgeInsets.all(8),
+                              clipBehavior: Clip.antiAlias,
+                              decoration: BoxDecoration(
+                                color: _LandingColors.background.withOpacity(0.5),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Image.network(
+                                _HeroImages.pendant,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                  Icons.diamond_outlined,
+                                  size: 48,
+                                  color: _LandingColors.border,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Emerald Pendant',
+                                  style: _LandingTypography.bodyLarge.copyWith(
+                                    color: _LandingColors.primaryText,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  'Perfect Match',
+                                  style: _LandingTypography.bodyMedium.copyWith(
+                                    color: _LandingColors.primaryEmerald,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
-                  const SizedBox(width: 8),
-                  Text('98% Match', style: _LandingTypography.labelLarge.copyWith(color: Colors.white)),
-                ],
+
+              // AI Match Score Badge
+              Positioned(
+                right: isDesktop ? 20 : 8,
+                top: isDesktop ? 160 : 90,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: _LandingColors.primaryEmerald,
+                    borderRadius: BorderRadius.circular(32),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _LandingColors.primaryEmerald.withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        '98% Match',
+                        style: _LandingTypography.labelLarge.copyWith(color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+
+        // On non-desktop, center the fixed-width card group inside
+        // whatever extra space is available instead of letting it
+        // stretch corner-to-corner.
+        return isDesktop
+            ? stack
+            : SizedBox(width: maxW, child: Center(child: stack));
+      },
     );
 
     return Container(
@@ -989,12 +1059,19 @@ class _FooterSection extends StatelessWidget {
             color: _LandingColors.border,
             margin: const EdgeInsets.only(bottom: 64),
           ),
+          // The footer links sit in a Flex/Flexible+Wrap combo so at
+          // "just barely desktop" widths (e.g. right around the 800px
+          // breakpoint, which is exactly where Chrome DevTools lands
+          // when it docks and shrinks the viewport), the combined
+          // natural width of the logo + links + copyright text can
+          // shrink/wrap instead of throwing a RenderFlex overflow.
           Flex(
             direction: isDesktop ? Axis.horizontal : Axis.vertical,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: isDesktop ? CrossAxisAlignment.center : CrossAxisAlignment.start,
             children: [
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(Icons.diamond_outlined, color: _LandingColors.primaryEmerald, size: 24),
                   const SizedBox(width: 12),
@@ -1005,20 +1082,23 @@ class _FooterSection extends StatelessWidget {
                 ],
               ),
               if (!isDesktop) const SizedBox(height: 48),
-              Row(
-                mainAxisAlignment: isDesktop ? MainAxisAlignment.end : MainAxisAlignment.start,
-                children: [
-                  _FooterLink(text: 'The Closet'),
-                  const SizedBox(width: 40),
-                  _FooterLink(text: 'AI Matching'),
-                  const SizedBox(width: 40),
-                  _FooterLink(text: 'Privacy'),
-                ],
+              Flexible(
+                child: Wrap(
+                  alignment: isDesktop ? WrapAlignment.end : WrapAlignment.start,
+                  spacing: 40,
+                  runSpacing: 16,
+                  children: const [
+                    _FooterLink(text: 'The Closet'),
+                    _FooterLink(text: 'AI Matching'),
+                    _FooterLink(text: 'Privacy'),
+                  ],
+                ),
               ),
               if (!isDesktop) const SizedBox(height: 48),
               Text(
                 '© ${DateTime.now().year} JewellryVault. All rights reserved.',
                 style: _LandingTypography.bodyMedium,
+                textAlign: isDesktop ? TextAlign.right : TextAlign.left,
               ),
             ],
           ),
@@ -1047,4 +1127,3 @@ class _FooterLink extends StatelessWidget {
     );
   }
 }
-
