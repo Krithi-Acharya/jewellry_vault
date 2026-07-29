@@ -180,7 +180,10 @@ class _PromptScreenState extends State<PromptScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: AppColors.primaryEmerald, width: 1.5),
+                  borderSide: const BorderSide(
+                    color: AppColors.primaryEmerald,
+                    width: 1.5,
+                  ),
                 ),
                 contentPadding: const EdgeInsets.all(18),
               ),
@@ -269,8 +272,12 @@ class _PromptScreenState extends State<PromptScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.auto_awesome, color: AppColors.accentGold, size: 22),
-                    const SizedBox(width: 14),
+                    const Icon(
+                      Icons.auto_awesome,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         _outfitResponse!.suggestionText,
