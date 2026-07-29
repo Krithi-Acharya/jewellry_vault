@@ -32,10 +32,18 @@ class JVAppShell extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
-        leading: showBackButton && Navigator.canPop(context)
+        // Landing on a route directly (a typed URL on web) leaves nothing to
+        // pop, so fall back to the dashboard instead of dropping the control.
+        leading: showBackButton
             ? IconButton(
                 icon: const Icon(Icons.arrow_back, color: AppColors.primaryText),
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  } else {
+                    Navigator.pushReplacementNamed(context, '/dashboard');
+                  }
+                },
               )
             : null,
         actions: actions != null

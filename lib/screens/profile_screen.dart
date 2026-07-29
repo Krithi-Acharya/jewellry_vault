@@ -44,7 +44,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // the resulting URL so it can be shown + persisted to the Firebase profile.
   Future<void> pickAndUploadPhoto() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
     if (picked == null) return; // user cancelled
 
     setState(() => isUploadingPhoto = true);
@@ -55,10 +58,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       const cloudName = 'umv4zdwz';
       const uploadPreset = 'profile_photos';
 
-      final uri = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
+      final uri = Uri.parse(
+        'https://api.cloudinary.com/v1_1/$cloudName/image/upload',
+      );
       final request = http.MultipartRequest('POST', uri)
         ..fields['upload_preset'] = uploadPreset
-        ..files.add(http.MultipartFile.fromBytes('file', bytes, filename: picked.name));
+        ..files.add(
+          http.MultipartFile.fromBytes('file', bytes, filename: picked.name),
+        );
 
       final response = await request.send();
       final resBody = await response.stream.bytesToString();
@@ -71,9 +78,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       setState(() => isUploadingPhoto = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
       }
     }
   }
@@ -101,15 +108,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await user?.reload();
     setState(() => isEditing = false);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Profile updated')));
     }
   }
 
   Future<void> logout() async {
     await FirebaseAuth.instance.signOut();
-    if (mounted) Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    if (mounted)
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
   @override

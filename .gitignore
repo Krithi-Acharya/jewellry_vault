@@ -44,13 +44,14 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Environments
-.env
-app_config.env
-# Environment / secrets
+# Environment / secrets — real config is never committed, only *.example files
 .env
 *.env
+*.env.bak
+*.env.*
+app_config.env
 !.env.example
+!app_config.env.example
 
 # Uploaded user content (never commit)
 backend/public/uploads/

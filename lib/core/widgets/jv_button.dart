@@ -3,7 +3,6 @@ import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_radius.dart';
-import '../theme/app_shadows.dart';
 
 enum JVButtonVariant { primary, secondary, outlined }
 
@@ -25,6 +24,14 @@ class JVButton extends StatelessWidget {
     this.isFullWidth = true,
   });
 
+  /// Foreground colour for the label and icon.
+  ///
+  /// AppTypography.labelLarge carries a dark colour, which would otherwise
+  /// override the button's foregroundColor and render dark text on the dark
+  /// emerald fill.
+  Color get _foregroundColor =>
+      variant == JVButtonVariant.primary ? Colors.white : AppColors.primaryText;
+
   @override
   Widget build(BuildContext context) {
     Widget buttonContent = Row(
@@ -44,10 +51,16 @@ class JVButton extends StatelessWidget {
           )
         else ...[
           if (icon != null) ...[
-            Icon(icon, size: 20),
+            Icon(icon, size: 20, color: _foregroundColor),
             const SizedBox(width: AppSpacing.sm),
           ],
-          Text(text, style: AppTypography.labelLarge.copyWith(fontSize: 15)),
+          Text(
+            text,
+            style: AppTypography.labelLarge.copyWith(
+              fontSize: 15,
+              color: _foregroundColor,
+            ),
+          ),
         ],
       ],
     );

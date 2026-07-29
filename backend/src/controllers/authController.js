@@ -1,5 +1,20 @@
 import prisma from '../config/database.js';
 
+/**
+ * Returns the caller's own synced profile, including their role — the
+ * client needs this to decide whether to show admin-only UI.
+ */
+export const getMe = async (req, res) => {
+  if (!req.dbUser) {
+    return res.status(404).json({ status: 'ERROR', message: 'User not synced yet' });
+  }
+
+  res.status(200).json({
+    status: 'SUCCESS',
+    data: { user: req.dbUser },
+  });
+};
+
 export const syncUser = async (req, res) => {
   try {
     const { uid, email } = req.user;

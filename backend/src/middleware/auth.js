@@ -52,3 +52,14 @@ export const verifyFirebaseToken = async (req, res, next) => {
     return res.status(401).json({ status: 'ERROR', message: 'Unauthorized: Invalid token' });
   }
 };
+
+/**
+ * Gates a route to admin users. Must run after verifyFirebaseToken, which
+ * attaches req.dbUser.
+ */
+export const requireAdmin = (req, res, next) => {
+  if (req.dbUser?.usr_role !== 'admin') {
+    return res.status(403).json({ status: 'ERROR', message: 'Forbidden: Admin access required' });
+  }
+  next();
+};

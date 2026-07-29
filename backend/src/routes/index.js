@@ -4,6 +4,8 @@ import authRoutes from './auth.js';
 import itemRoutes from './items.js';
 import jobRoutes from './jobs.js';
 import recommendationRoutes from './recommendations.js';
+import lookbookRoutes from './lookbooks.js';
+import adminRoutes from './admin.js';
 
 const router = Router();
 
@@ -12,5 +14,8 @@ router.use('/auth', authRoutes);
 router.use('/items', itemRoutes);
 router.use('/jobs', jobRoutes);
 router.use('/recommendations', recommendationRoutes);
+router.use('/lookbooks', lookbookRoutes);
+router.use('/admin', adminRoutes);
 
 export default router;
+

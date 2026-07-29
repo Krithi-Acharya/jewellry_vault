@@ -60,7 +60,8 @@ class NvidiaNimProvider(VisionProvider):
                 messages=messages,
                 model=self.model,
                 temperature=0.0,
-                max_tokens=1024
+                max_tokens=1024,
+                timeout=60
             )
             
             raw_content = chat_completion.choices[0].message.content

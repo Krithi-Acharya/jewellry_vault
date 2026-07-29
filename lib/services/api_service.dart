@@ -9,19 +9,19 @@ class ApiService {
   late final Dio _dio;
 
   ApiService._internal() {
-    _dio = Dio(BaseOptions(
-      baseUrl: AppConfig.apiBaseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
-    ));
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: AppConfig.apiBaseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+      ),
+    );
 
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
           // Define public endpoints that don't need a token
-          const publicEndpoints = [
-            ApiConstants.login,
-          ];
+          const publicEndpoints = [ApiConstants.login];
 
           if (!publicEndpoints.contains(options.path)) {
             // Fetch the token directly from Firebase to ensure hot reloads work
