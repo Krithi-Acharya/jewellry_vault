@@ -28,7 +28,7 @@ class Worker:
 
         # 1. Download
         local_path = os.path.join(self.temp_dir, f"job_{job_id}_raw.jpg")
-        response = requests.get(url, stream=True)
+        response = requests.get(url, stream=True, timeout=30)
         response.raise_for_status()
         with open(local_path, 'wb') as f:
             for chunk in response.iter_content(8192):
@@ -98,7 +98,8 @@ class Worker:
             # 3. Vision API
             self.db.update_job_status(job_id, 'ANALYZING')
             t3 = time.time()
-            analysis_result = self.vision_provider.analyze(processed_path, prompt_version="metadata_v2")
+            analysis_result = self.vision_provider.analyze(processed_path, prompt_version="metadata_v9")
+
             t_vision = (time.time() - t3) * 1000
             
             # 4. Save Raw Response
@@ -128,30 +129,60 @@ class Worker:
             
             # 6. Extract colors from AI Data for DB
             colors = []
-            if ai_data.get('primary_color'):
-                colors.append(ai_data['primary_color'])
-                del ai_data['primary_color']
-            if ai_data.get('secondary_color'):
-                colors.append(ai_data['secondary_color'])
-                del ai_data['secondary_color']
+            primary_col = ai_data.pop('primary_color', None)
+            if primary_col:
+                colors.append(primary_col)
+            secondary_col = ai_data.pop('secondary_color', None)
+            if secondary_col:
+                colors.append(secondary_col)
                 
-            # 7. Point the item at the detected category. Uploads start on a
-            # placeholder category, so skipping this leaves every item filed
-            # under whichever category happens to be first in the table.
-            matched_category = self.db.apply_ai_category(
-                ci_id,
-                ai_data.get('category'),
-                ai_data.get('subcategory')
+            # 7. Check for subject ambiguity using single-source category resolution
+            cat_info = self.db.resolve_category_info(ai_data.get('subcategory'), ai_data.get('category'))
+            category_is_garment = cat_info is not None and not cat_info['is_jewelry']
+            
+            garment_present = bool(ai_data.get('garment_present')) or category_is_garment
+            jewelry_present = bool(ai_data.get('jewelry_present'))
+            
+            multiple_garments = (
+                bool(ai_data.get('multiple_garments_present'))
+                or (isinstance(ai_data.get('garment_pieces'), list) and len(ai_data.get('garment_pieces')) > 1)
             )
-            if matched_category:
-                logging.info(f"Item {ci_id} categorised as id={matched_category}")
+
+            text_to_check = f"{ai_data.get('category', '')} {ai_data.get('subcategory', '')}".lower()
+            if any(kw in text_to_check for kw in ['outfit', 'co-ord', 'set', 'suit', 'combination']):
+                multiple_garments = True
+
+            needs_clarification = (garment_present and jewelry_present) or multiple_garments
+            
+            if needs_clarification:
+                logging.info(f"Item {ci_id} requires user clarification (multiple garments or garment+jewelry); setting status NEEDS_CLARIFICATION")
+                self.db.set_item_status(ci_id, 'NEEDS_CLARIFICATION')
+
+
             else:
-                logging.warning(
-                    f"Item {ci_id}: no category matched "
-                    f"(category={ai_data.get('category')!r}, subcategory={ai_data.get('subcategory')!r})"
+                matched_category = self.db.apply_ai_category(
+                    ci_id,
+                    ai_data.get('category'),
+                    ai_data.get('subcategory')
                 )
+                if matched_category:
+                    logging.info(f"Item {ci_id} categorised as id={matched_category}")
+                else:
+                    logging.warning(
+                        f"Item {ci_id}: no category matched "
+                        f"(category={ai_data.get('category')!r}, subcategory={ai_data.get('subcategory')!r})"
+                    )
+                self.db.set_item_status(ci_id, 'ACTIVE')
+
+            # Normalize array values (e.g. multi-tone metals ['Gold', 'Silver'] -> "Gold, Silver")
+            for key, val in list(ai_data.items()):
+                if isinstance(val, list):
+                    ai_data[key] = ", ".join([str(v).strip() for v in val if v])
 
             self.db.save_extracted_metadata(ci_id, colors, ai_data)
+
+
+
             
             self.db.update_job_status(job_id, 'COMPLETED')
             t_db = (time.time() - t4) * 1000
@@ -187,4 +218,11 @@ class Worker:
             except psycopg2.OperationalError as e:
                 logging.error(f"Database connection lost: {e}. Reconnecting in 5s...")
                 time.sleep(5)
-                self.db = Database()
+                try:
+                    self.db = Database()
+                except Exception:
+                    pass
+            except Exception as e:
+                logging.error(f"Unexpected error in worker loop: {e}. Retrying in 5s...")
+                time.sleep(5)
+

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'dart:typed_data';
+import '../providers/closet_provider.dart';
 import '../../../core/config/app_config.dart';
 import '../../../services/auth_service.dart';
+
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -206,11 +209,15 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
       );
 
       if (!mounted) return;
-      Navigator.pop(context); // Go back to closet
+      try {
+        context.read<ClosetProvider>().fetchItems();
+      } catch (_) {}
+      Navigator.pop(context, true); // Go back to closet with deleted signal
     } catch (e) {
       print('Error deleting item: $e');
       setState(() => _isLoading = false);
     }
+
   }
 
   Future<void> _saveChanges() async {
@@ -541,6 +548,11 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
           ..._attrControllers.entries.map((entry) {
             final name = entry.key;
             final controller = entry.value;
+            final formattedName = name
+                .replaceAll('_', ' ')
+                .split(' ')
+                .map((w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}' : '')
+                .join(' ');
 
             return Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -548,27 +560,31 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                 controller: controller,
                 style: AppTypography.bodyMedium,
                 decoration: InputDecoration(
-                  labelText: name.replaceAll('_', ' ').toUpperCase(),
+                  labelText: formattedName,
+                  hintText: 'Not specified',
+                  hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.mutedText.withValues(alpha: 0.6)),
                   labelStyle: AppTypography.labelSmall.copyWith(color: AppColors.mutedText),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                     borderSide: const BorderSide(color: AppColors.border),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(
+                      color: controller.text.trim().isEmpty ? AppColors.border.withValues(alpha: 0.5) : AppColors.border,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: AppColors.primaryEmerald),
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: AppColors.primaryEmerald, width: 1.5),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   filled: true,
-                  fillColor: AppColors.background,
+                  fillColor: controller.text.trim().isEmpty ? AppColors.background.withValues(alpha: 0.5) : AppColors.background,
                 ),
               ),
             );
-          }).toList(),
+          }),
           const SizedBox(height: AppSpacing.md),
           SizedBox(
             width: double.infinity,

@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../providers/closet_provider.dart';
 import '../../../core/config/app_config.dart';
 import '../../../services/auth_service.dart';
+
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/widgets/jv_app_shell.dart';
 import '../../../core/widgets/jv_button.dart';
-import '../../../core/widgets/jv_card.dart';
 import '../../../core/widgets/jv_metadata_display_tile.dart';
 import '../../../core/widgets/jv_image_placeholder.dart';
+import '../services/closet_service.dart';
 
 class MetadataReviewScreen extends StatefulWidget {
   final int itemId;
@@ -33,11 +36,51 @@ class _MetadataReviewScreenState extends State<MetadataReviewScreen> {
   final Map<String, TextEditingController> _attrControllers = {};
   List<Map<String, dynamic>> _editedColors = [];
 
+  // Clarification state
+  String _selectedType = 'garment'; // 'garment' or 'jewelry'
+  String? _selectedCategory;
+  bool _isClarifying = false;
+
+  List<String> _garmentCategories = [
+    'Saree', 'Lehenga', 'Top', 'Pants', 'Dress', 'Skirt', 'Shirt', 'Outerwear', 'Full Outfit / Co-ord Set', 'Shoes', 'Bag', 'Accessory'
+  ];
+  List<String> _jewelryCategories = [
+    'Ring', 'Necklace', 'Earrings', 'Bracelet', 'Watch'
+  ];
+
+  static const Set<String> _jewelryNames = {
+    'ring', 'necklace', 'earrings', 'bracelet', 'watch', 'pendant', 'bangle', 'anklet', 'jewelry', 'jewelry set'
+  };
+
+
   @override
   void initState() {
     super.initState();
     _fetchMetadata();
+    _fetchCategories();
   }
+
+  Future<void> _fetchCategories() async {
+    try {
+      final cats = await ClosetService.instance.fetchCategories();
+      if (mounted && cats.isNotEmpty) {
+        final jList = <String>[];
+        final gList = <String>[];
+        for (final cat in cats) {
+          if (_jewelryNames.contains(cat.toLowerCase())) {
+            jList.add(cat);
+          } else {
+            gList.add(cat);
+          }
+        }
+        setState(() {
+          if (jList.isNotEmpty) _jewelryCategories = jList;
+          if (gList.isNotEmpty) _garmentCategories = gList;
+        });
+      }
+    } catch (_) {}
+  }
+
 
   @override
   void dispose() {
@@ -69,10 +112,52 @@ class _MetadataReviewScreenState extends State<MetadataReviewScreen> {
 
         final colors = data['colors'] as List<dynamic>? ?? [];
         _editedColors = colors.map((c) => Map<String, dynamic>.from(c)).toList();
+
+        // Default pre-selected category guess
+        if (data['categoryName'] != null) {
+          _selectedCategory = data['categoryName'];
+        }
       });
-    } catch (e) {
-      print('Error fetching metadata: $e');
+    } catch (_) {
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _submitClarification() async {
+    if (_selectedCategory == null) return;
+    setState(() => _isClarifying = true);
+
+    try {
+      await ClosetService.instance.clarifyItem(
+        widget.itemId,
+        _selectedType,
+        _selectedCategory!,
+      );
+
+      if (mounted) {
+        setState(() {
+          _isClarifying = false;
+          _metadata?['status_label'] = 'Verified';
+          _metadata?['status'] = 'ACTIVE';
+          _metadata?['categoryName'] = _selectedCategory;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Category set to "$_selectedCategory"!'),
+            backgroundColor: AppColors.primaryEmerald,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isClarifying = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update category: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
     }
   }
 
@@ -84,10 +169,9 @@ class _MetadataReviewScreenState extends State<MetadataReviewScreen> {
         manualAttributes[entry.key] = entry.value.text;
       }
 
-      final Map<String, dynamic> manualColors = {};
-      for (var c in _editedColors) {
-        manualColors[c['name']] = c['hex'];
-      }
+      final List<Map<String, dynamic>> manualColors = _editedColors
+          .map((c) => {'name': c['name'], 'hex': c['hex']})
+          .toList();
 
       final token = await AuthService.instance.getIdToken();
       final url = '${AppConfig.apiBaseUrl}/items/${widget.itemId}';
@@ -103,15 +187,18 @@ class _MetadataReviewScreenState extends State<MetadataReviewScreen> {
       );
 
       if (!mounted) return;
+      try {
+        context.read<ClosetProvider>().fetchItems();
+      } catch (_) {}
       Navigator.pushNamedAndRemoveUntil(context, '/closet', ModalRoute.withName('/dashboard'));
     } catch (e) {
-      print('Error saving metadata: $e');
       setState(() => _isSaving = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to save')));
       }
     }
   }
+
 
   void _showColorPicker(int index) {
     if (!_isEditing) return;
@@ -134,7 +221,7 @@ class _MetadataReviewScreenState extends State<MetadataReviewScreen> {
                   pickerColor: currentColor,
                   onColorChanged: (color) {
                     currentColor = color;
-                    hexController.text = '#${color.value.toRadixString(16).substring(2).toUpperCase()}';
+                    hexController.text = '#${color.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
                   },
                   pickerAreaHeightPercent: 0.8,
                   enableAlpha: false,
@@ -155,7 +242,7 @@ class _MetadataReviewScreenState extends State<MetadataReviewScreen> {
                         setState(() {
                           currentColor = Color(int.parse(val.replaceFirst('#', '0xff')));
                         });
-                      } catch (e) {}
+                      } catch (_) {}
                     }
                   },
                 ),
@@ -180,6 +267,74 @@ class _MetadataReviewScreenState extends State<MetadataReviewScreen> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildCategoryGroup(String title, List<String> items) {
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 8, bottom: 6),
+          child: Text(
+            title,
+            style: AppTypography.labelSmall.copyWith(
+              color: AppColors.secondaryText,
+              fontWeight: FontWeight.w600,
+              fontSize: 10,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: items.map((cat) {
+            final isSelected = _selectedCategory?.toLowerCase() == cat.toLowerCase();
+            return ChoiceChip(
+              label: Text(cat),
+              selected: isSelected,
+              selectedColor: AppColors.primaryEmerald,
+              backgroundColor: AppColors.surface,
+              side: BorderSide(
+                color: isSelected ? AppColors.primaryEmerald : AppColors.border,
+              ),
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : AppColors.primaryText,
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+              onSelected: (val) {
+                if (val) setState(() => _selectedCategory = cat);
+              },
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGroupedCategoryChips(List<String> categoryList) {
+    if (_selectedType == 'jewelry') {
+      return _buildCategoryGroup('JEWELRY & WATCHES', categoryList);
+    }
+
+    final ethnic = categoryList.where((c) => ['Saree', 'Lehenga'].contains(c)).toList();
+    final topsBottoms = categoryList.where((c) => ['Top', 'Shirt', 'Pants', 'Dress', 'Skirt'].contains(c)).toList();
+    final outerwearOutfits = categoryList.where((c) => ['Outerwear', 'Full Outfit / Co-ord Set'].contains(c)).toList();
+    final accessories = categoryList.where((c) => ['Shoes', 'Bag', 'Accessory'].contains(c)).toList();
+    final other = categoryList.where((c) => !ethnic.contains(c) && !topsBottoms.contains(c) && !outerwearOutfits.contains(c) && !accessories.contains(c)).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (topsBottoms.isNotEmpty) _buildCategoryGroup('TOPS, BOTTOMS & DRESSES', topsBottoms),
+        if (ethnic.isNotEmpty) _buildCategoryGroup('ETHNIC WEAR', ethnic),
+        if (outerwearOutfits.isNotEmpty) _buildCategoryGroup('OUTERWEAR & SETS', outerwearOutfits),
+        if (accessories.isNotEmpty) _buildCategoryGroup('SHOES & ACCESSORIES', accessories),
+        if (other.isNotEmpty) _buildCategoryGroup('OTHER CATEGORIES', other),
+      ],
     );
   }
 
@@ -216,6 +371,13 @@ class _MetadataReviewScreenState extends State<MetadataReviewScreen> {
         ? '${AppConfig.apiBaseUrl.replaceAll('/api/v1', '')}${_metadata!['image']}'
         : null;
 
+    final isNeedsClarification = _metadata!['status_label'] == 'Needs Info' ||
+        _metadata!['status'] == 'NEEDS_CLARIFICATION';
+
+    final displayedCategoryList = _selectedType == 'jewelry'
+        ? _jewelryCategories
+        : _garmentCategories;
+
     return JVAppShell(
       title: 'Review Details',
       actions: [
@@ -237,6 +399,112 @@ class _MetadataReviewScreenState extends State<MetadataReviewScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Clarification Interception Card
+                  if (isNeedsClarification) ...[
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.help_outline, color: AppColors.warning, size: 22),
+                              const SizedBox(width: 10),
+                              Text(
+                                "What's the main focus of this photo?",
+                                style: AppTypography.headingSmall.copyWith(fontSize: 16),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Multiple items or outfit pieces (Top/Bottom) are visible. Select what you would like to save this item as:',
+                            style: AppTypography.bodySmall.copyWith(color: AppColors.secondaryText),
+                          ),
+
+                          const SizedBox(height: 14),
+
+                          // Garment / Jewelry Type Segmented Switch
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ChoiceChip(
+                                  label: const Center(child: Text('Garment & Clothing')),
+                                  selected: _selectedType == 'garment',
+                                  selectedColor: AppColors.primaryEmerald,
+                                  labelStyle: TextStyle(
+                                    color: _selectedType == 'garment' ? Colors.white : AppColors.primaryText,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  onSelected: (selected) {
+                                    if (selected) {
+                                      setState(() {
+                                        _selectedType = 'garment';
+                                        _selectedCategory = _garmentCategories.first;
+                                      });
+                                    }
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: ChoiceChip(
+                                  label: const Center(child: Text('Jewelry & Accessories')),
+                                  selected: _selectedType == 'jewelry',
+                                  selectedColor: AppColors.primaryEmerald,
+                                  labelStyle: TextStyle(
+                                    color: _selectedType == 'jewelry' ? Colors.white : AppColors.primaryText,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  onSelected: (selected) {
+                                    if (selected) {
+                                      setState(() {
+                                        _selectedType = 'jewelry';
+                                        _selectedCategory = _jewelryCategories.first;
+                                      });
+                                    }
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+
+                          Text('Select Category:', style: AppTypography.labelSmall.copyWith(fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 4),
+                          _buildGroupedCategoryChips(displayedCategoryList),
+                          const SizedBox(height: 16),
+
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _isClarifying ? null : _submitClarification,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryEmerald,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: _isClarifying
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                    )
+                                  : const Text('Confirm Category & Unlock Details'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                  ],
+
                   Text(
                     'AI has analyzed your item. Please review and make any necessary corrections.',
                     style: AppTypography.bodyLarge.copyWith(color: AppColors.secondaryText),
@@ -350,7 +618,7 @@ class _MetadataReviewScreenState extends State<MetadataReviewScreen> {
                         ),
                       );
                     }
-                  }).toList(),
+                  }),
                   
                   const SizedBox(height: AppSpacing.xxl),
                 ],
@@ -368,7 +636,7 @@ class _MetadataReviewScreenState extends State<MetadataReviewScreen> {
               color: AppColors.surface,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   offset: const Offset(0, -4),
                   blurRadius: 10,
                 )

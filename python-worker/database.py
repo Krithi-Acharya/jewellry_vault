@@ -60,11 +60,31 @@ class Database:
                 ON CONFLICT (ciaitag_ci_id) DO UPDATE SET ciaitag_tags = %s
             """, (ci_id, json.dumps(tags), json.dumps(tags)))
             
+    def set_item_status(self, ci_id, status):
+        with self.conn.cursor() as cur:
+            cur.execute("""
+                UPDATE closet_items 
+                SET ci_status = %s 
+                WHERE ci_id = %s
+            """, (status, ci_id))
+
     # The model names garments in its own vocabulary, which does not always
     # match the seeded category rows (it returns "Bottoms"/"Jeans" where the
     # table stores "Pants"). Mapping the common variants avoids fragmenting the
     # category list with a row per phrasing.
     CATEGORY_SYNONYMS = {
+        'jewelry set': 'Jewelry Set',
+        'jewellery set': 'Jewelry Set',
+        'matching set': 'Jewelry Set',
+        'jewelry combo': 'Jewelry Set',
+        'lehenga': 'Lehenga',
+        'lehenga choli': 'Lehenga',
+        'ghagra choli': 'Lehenga',
+        'chaniya choli': 'Lehenga',
+        'sari': 'Saree',
+        'saree': 'Saree',
+        'coord': 'Full Outfit / Co-ord Set',
+        'co-ord': 'Full Outfit / Co-ord Set',
         'bottom': 'Pants',
         'bottoms': 'Pants',
         'jeans': 'Pants',
@@ -117,7 +137,30 @@ class Database:
         'flats': 'Shoes',
     }
 
+    JEWELRY_CATEGORY_NAMES = {'ring', 'necklace', 'earrings', 'bracelet', 'watch', 'pendant', 'bangle', 'anklet', 'jewelry', 'jewelry set'}
+
+
+    def resolve_category_info(self, *names):
+        """Resolves category ID, official name, and whether it is a jewelry category."""
+        matched_id = self.resolve_category_id(*names)
+        if not matched_id:
+            return None
+
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT itc_name FROM item_categories WHERE itc_id = %s", (matched_id,))
+            row = cur.fetchone()
+            if not row:
+                return None
+            name = row['itc_name'] if isinstance(row, dict) else row[0]
+            is_jewelry = name.lower() in self.JEWELRY_CATEGORY_NAMES
+            return {
+                'id': matched_id,
+                'name': name,
+                'is_jewelry': is_jewelry
+            }
+
     def resolve_category_id(self, *names):
+
         """Find an item_categories row matching any of the given names.
 
         Names are tried in order, so callers should pass the most specific

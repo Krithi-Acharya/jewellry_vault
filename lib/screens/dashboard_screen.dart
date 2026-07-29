@@ -1,14 +1,11 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../api_service.dart';
 import '../services/auth_service.dart';
 
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_typography.dart';
-import '../core/theme/app_radius.dart';
-import '../core/theme/app_spacing.dart';
+
 
 // ─────────────────────────────────────────────
 //  DATA MODEL
@@ -207,6 +204,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       'icon': Icons.add_circle_outline,
       'selectedIcon': Icons.add_circle,
     },
+    {
+      'title': 'Lookbooks',
+      'icon': Icons.collections_bookmark_outlined,
+      'selectedIcon': Icons.collections_bookmark,
+    },
     if (_isAdmin)
       {
         'title': 'Admin',
@@ -245,10 +247,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _handleNavTap(Map<String, dynamic> item, int index) {
     switch (item['title']) {
       case 'My Closet':
-        Navigator.pushNamed(context, '/closet');
+        Navigator.pushNamed(context, '/closet').then((_) {
+          if (mounted) _loadClosetItems();
+        });
         break;
       case 'Add New Item':
-        Navigator.pushNamed(context, '/upload');
+        Navigator.pushNamed(context, '/upload').then((_) {
+          if (mounted) _loadClosetItems();
+        });
+        break;
+      case 'Lookbooks':
+        Navigator.pushNamed(context, '/lookbooks').then((_) {
+          if (mounted) _loadClosetItems();
+        });
         break;
       case 'Admin':
         Navigator.pushNamed(context, '/admin');
@@ -257,6 +268,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() => _selectedIndex = index);
     }
   }
+
+
 
   Future<void> _toggleFavorite(String id) async {
     final idx = _closetItems.indexWhere((e) => e.id == id);
@@ -499,7 +512,8 @@ class _SidebarContent extends StatelessWidget {
               Expanded(
                 child: ListView.separated(
                   itemCount: navItems.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 4),
+                  separatorBuilder: (_, _) => const SizedBox(height: 4),
+
                   itemBuilder: (context, index) {
                     final item = navItems[index];
                     final isSelected = selectedIndex == index;
@@ -569,53 +583,57 @@ class _SidebarContent extends StatelessWidget {
                   ),
                 ),
               ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                onTap: () => Navigator.pushNamed(context, '/profile'),
-                leading: CircleAvatar(
-                  radius: 18,
-                  backgroundColor: AppColors.accentGoldLight,
-                  child: Text(
-                    greetingName.isNotEmpty ? greetingName[0].toUpperCase() : 'U',
-                    style: AppTypography.labelLarge.copyWith(
-                      color: AppColors.accentGold,
+              Material(
+                color: Colors.transparent,
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  onTap: () => Navigator.pushNamed(context, '/profile'),
+                  leading: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: AppColors.accentGoldLight,
+                    child: Text(
+                      greetingName.isNotEmpty ? greetingName[0].toUpperCase() : 'U',
+                      style: AppTypography.labelLarge.copyWith(
+                        color: AppColors.accentGold,
+                      ),
                     ),
                   ),
-                ),
-                title: Text(
-                  greetingName,
-                  style: AppTypography.labelLarge,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: Text(
-                  'Premium Member',
-                  style: AppTypography.bodyMedium.copyWith(fontSize: 11),
-                ),
-                trailing: IconButton(
-                  icon: const Icon(
-                    Icons.logout,
-                    color: Colors.redAccent,
-                    size: 18,
+                  title: Text(
+                    greetingName,
+                    style: AppTypography.labelLarge,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  onPressed: () async {
-                    try {
-                      await AuthService.instance.signOut();
-                      // No need to manually navigate.
-                      // AuthGate will detect the state change and show the LandingPage.
-                    } catch (e) {
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Failed to sign out. Please try again.',
+                  subtitle: Text(
+                    'Premium Member',
+                    style: AppTypography.bodyMedium.copyWith(fontSize: 11),
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(
+                      Icons.logout,
+                      color: Colors.redAccent,
+                      size: 18,
+                    ),
+                    onPressed: () async {
+                      try {
+                        await AuthService.instance.signOut();
+                        // No need to manually navigate.
+                        // AuthGate will detect the state change and show the LandingPage.
+                      } catch (e) {
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Failed to sign out. Please try again.',
+                            ),
                           ),
-                        ),
-                      );
-                    }
-                  },
+                        );
+                      }
+                    },
+                  ),
                 ),
               ),
+
             ],
           ),
         );
@@ -706,8 +724,8 @@ class _DashboardView extends StatelessWidget {
           // ── STAT CARDS ──────────────────────────────────────
           LayoutBuilder(
             builder: (ctx, constraints) {
-              final w = (constraints.maxWidth - 48) / 4;
               final isNarrow = constraints.maxWidth < 700;
+
               return isNarrow
                   ? Column(
                       children: [
@@ -994,7 +1012,7 @@ class _AISuggestionCard extends StatelessWidget {
         if (pairA != null && pairB != null) ...[
           Row(
             children: [
-              _PairChip(item: pairA!),
+              Expanded(child: _PairChip(item: pairA!)),
               const SizedBox(width: 10),
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -1013,7 +1031,7 @@ class _AISuggestionCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              _PairChip(item: pairB!),
+              Expanded(child: _PairChip(item: pairB!)),
             ],
           ),
           const SizedBox(height: 20),
@@ -1067,11 +1085,15 @@ class _PairChip extends StatelessWidget {
       children: [
         Icon(item.icon, color: Colors.white, size: 16),
         const SizedBox(width: 8),
-        Text(
-          item.title,
-          style: AppTypography.labelLarge.copyWith(
-            color: Colors.white,
-            fontSize: 12,
+        Flexible(
+          child: Text(
+            item.title,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            style: AppTypography.labelLarge.copyWith(
+              color: Colors.white,
+              fontSize: 12,
+            ),
           ),
         ),
       ],

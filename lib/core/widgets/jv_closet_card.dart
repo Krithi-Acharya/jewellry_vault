@@ -45,6 +45,10 @@ class _JVClosetCardState extends State<JVClosetCard> {
         statusColor = AppColors.warning;
         statusIcon = Icons.priority_high;
         break;
+      case 'Needs Info':
+        statusColor = AppColors.warning;
+        statusIcon = Icons.help_outline;
+        break;
       case 'Edited':
         statusColor = AppColors.info;
         statusIcon = Icons.edit;
@@ -53,6 +57,7 @@ class _JVClosetCardState extends State<JVClosetCard> {
         statusColor = AppColors.mutedText;
         statusIcon = Icons.hourglass_empty;
     }
+
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),

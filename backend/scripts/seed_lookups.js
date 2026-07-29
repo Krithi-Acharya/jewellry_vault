@@ -20,7 +20,11 @@ const CATEGORIES = [
   'Dress', 'Shirt', 'Top', 'Skirt', 'Pants',
   'Outerwear', 'Shoes', 'Bag', 'Accessory',
   'Ring', 'Necklace', 'Earrings', 'Bracelet', 'Watch',
+  'Saree', 'Lehenga', 'Jewelry Set', 'Full Outfit / Co-ord Set',
 ];
+
+
+
 
 const FABRIC_TYPES = [
   'Cotton', 'Linen', 'Silk', 'Wool', 'Cashmere', 'Denim', 'Leather',

@@ -154,13 +154,17 @@ export const hexToColorName = (hex) => {
  * object shape the worker writes or an already-mapped array.
  */
 export const getPrimaryColorName = (aiColors) => {
+  if (!aiColors) return '';
   const mapped = mapAiColorsToFlutter(aiColors);
   if (mapped.length === 0) return '';
 
-  // mapAiColorsToFlutter already resolves storage keys to real colour names,
-  // so the first entry is the primary colour ready for display.
-  return mapped[0]?.name ?? '';
+  const firstName = mapped[0]?.name ?? '';
+  if (firstName && !isPlaceholderColorName(firstName)) {
+    return firstName;
+  }
+  return mapped[0]?.hex ? hexToColorName(mapped[0].hex) : '';
 };
+
 
 /**
  * Maps the Prisma item_ai_responses array to the history object format.

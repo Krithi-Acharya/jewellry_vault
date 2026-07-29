@@ -48,8 +48,11 @@ class _ClosetScreenState extends State<ClosetScreen> {
         IconButton(
           icon: const Icon(Icons.add),
           color: AppColors.primaryEmerald,
-          onPressed: () {
-            Navigator.pushNamed(context, '/upload');
+          onPressed: () async {
+            await Navigator.pushNamed(context, '/upload');
+            if (context.mounted) {
+              context.read<ClosetProvider>().fetchItems();
+            }
           },
           tooltip: 'Upload Garment',
         ),
@@ -76,30 +79,30 @@ class _ClosetScreenState extends State<ClosetScreen> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 420),
                 child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search closet...',
-                hintStyle: AppTypography.bodyMedium,
-                prefixIcon: const Icon(Icons.search, color: AppColors.mutedText, size: 20),
-                filled: true,
-                fillColor: AppColors.surface,
-                contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.input),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.input),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.input),
-                  borderSide: const BorderSide(color: AppColors.primaryEmerald),
-                ),
-              ),
-              onChanged: (val) {
-                context.read<ClosetProvider>().setSearchQuery(val);
-              },
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search closet...',
+                    hintStyle: AppTypography.bodyMedium,
+                    prefixIcon: const Icon(Icons.search, color: AppColors.mutedText, size: 20),
+                    filled: true,
+                    fillColor: AppColors.surface,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.input),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.input),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.input),
+                      borderSide: const BorderSide(color: AppColors.primaryEmerald),
+                    ),
+                  ),
+                  onChanged: (val) {
+                    context.read<ClosetProvider>().setSearchQuery(val);
+                  },
                 ),
               ),
             ),
@@ -157,60 +160,77 @@ class _ClosetScreenState extends State<ClosetScreen> {
               builder: (context, constraints) {
                 final columns = _columnsFor(constraints.maxWidth);
                 return Consumer<ClosetProvider>(
-              builder: (context, provider, child) {
-                if (provider.isLoading) {
-                  return MasonryGridView.count(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
-                    crossAxisCount: columns,
-                    mainAxisSpacing: AppSpacing.md,
-                    crossAxisSpacing: AppSpacing.md,
-                    itemCount: 6,
-                    itemBuilder: (context, index) => const JVClosetGridSkeleton(),
-                  );
-                }
-                
-                if (provider.items.isEmpty) {
-                  return const JVEmptyState(
-                    title: 'No items found',
-                    message: 'Your closet is looking a little bare. Upload some items to get started.',
-                  );
-                }
-
-                return MasonryGridView.count(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
-                  crossAxisCount: columns,
-                  mainAxisSpacing: AppSpacing.md,
-                  crossAxisSpacing: AppSpacing.md,
-                  itemCount: provider.items.length,
-                  itemBuilder: (context, index) {
-                    final item = provider.items[index];
-                    final String? thumbnail = item['thumbnail_url'];
-                    final String imageUrl = thumbnail != null
-                        ? '${AppConfig.apiBaseUrl.replaceAll('/api/v1', '')}$thumbnail'
-                        : '';
-                        
-                    final String title = item['display_title'] ?? 'Unknown Item';
-                    final String subtitle = item['display_subtitle'] ?? 'Unknown details';
-                    final String badgeStatus = item['status_label'] ?? 'Processing';
+                  builder: (context, provider, child) {
+                    if (provider.isLoading) {
+                      return MasonryGridView.count(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+                        crossAxisCount: columns,
+                        mainAxisSpacing: AppSpacing.md,
+                        crossAxisSpacing: AppSpacing.md,
+                        itemCount: 6,
+                        itemBuilder: (context, index) => const JVClosetGridSkeleton(),
+                      );
+                    }
                     
-                    return JVClosetCard(
-                      imageUrl: imageUrl,
-                      title: title,
-                      subtitle: subtitle,
-                      status: badgeStatus,
-                      onTap: () {
-                        Navigator.pushNamed(context, '/item-details', arguments: item['id']);
-                      },
+                    if (provider.items.isEmpty) {
+                      return RefreshIndicator(
+                        onRefresh: () => context.read<ClosetProvider>().fetchItems(),
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: Container(
+                            alignment: Alignment.center,
+                            height: 300,
+                            child: const JVEmptyState(
+                              title: 'No items found',
+                              message: 'Your closet is looking a little bare. Upload some items to get started.',
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
+                    return RefreshIndicator(
+                      onRefresh: () => context.read<ClosetProvider>().fetchItems(),
+                      child: MasonryGridView.count(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+                        crossAxisCount: columns,
+                        mainAxisSpacing: AppSpacing.md,
+                        crossAxisSpacing: AppSpacing.md,
+                        itemCount: provider.items.length,
+                        itemBuilder: (context, index) {
+                          final item = provider.items[index];
+                          final String? thumbnail = item['thumbnail_url'];
+                          final String imageUrl = thumbnail != null
+                              ? '${AppConfig.apiBaseUrl.replaceAll('/api/v1', '')}$thumbnail'
+                              : '';
+                              
+                          final String title = item['display_title'] ?? 'Unknown Item';
+                          final String subtitle = item['display_subtitle'] ?? 'Unknown details';
+                          final String badgeStatus = item['status_label'] ?? 'Processing';
+                          
+                          return JVClosetCard(
+                            imageUrl: imageUrl,
+                            title: title,
+                            subtitle: subtitle,
+                            status: badgeStatus,
+                            onTap: () async {
+                              await Navigator.pushNamed(context, '/item-details', arguments: item['id']);
+                              if (context.mounted) {
+                                context.read<ClosetProvider>().fetchItems();
+                              }
+                            },
+                          );
+                        },
+                      ),
                     );
                   },
-                );
-              },
                 );
               },
             ),
           ),
         ],
       ),
+
     );
   }
 }

@@ -21,6 +21,7 @@ import 'presentation/closet/screens/item_details_screen.dart';
 import 'presentation/closet/screens/metadata_review_screen.dart';
 import 'presentation/closet/screens/recommendations_screen.dart';
 import 'presentation/admin/screens/admin_screen.dart';
+import 'presentation/lookbooks/screens/lookbooks_screen.dart';
 import 'services/auth_service.dart';
 
 void main() async {
@@ -64,8 +65,10 @@ class MyApp extends StatelessWidget {
         '/prompt': (context) => const _RequireAuth(child: PromptScreen()),
         '/closet': (context) => const _RequireAuth(child: ClosetScreen()),
         '/upload': (context) => const _RequireAuth(child: UploadScreen()),
+        '/lookbooks': (context) => const _RequireAuth(child: LookbooksScreen()),
         '/admin': (context) => const _RequireAuth(child: _RequireAdmin(child: AdminScreen())),
       },
+
 
       onGenerateRoute: (settings) {
         // These routes carry required arguments, so a direct URL visit without

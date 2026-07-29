@@ -4,7 +4,9 @@ import { mapAiAttributesToFlutter, mapAiColorsToFlutter, mapAiHistory, getPrimar
 // --- DTO Mappers ---
 export const mapItemToDto = (item) => {
   let badgeStatus = 'Processing';
-  if (item.ci_status === 'ACTIVE') {
+  if (item.ci_status === 'NEEDS_CLARIFICATION') {
+    badgeStatus = 'Needs Info';
+  } else if (item.ci_status === 'ACTIVE') {
     const tags = item.closet_item_ai_tags?.ciaitag_tags || {};
     if (tags.is_edited) {
       badgeStatus = 'Edited';
@@ -15,34 +17,55 @@ export const mapItemToDto = (item) => {
     }
   }
 
+
   const tags = item.closet_item_ai_tags?.ciaitag_tags || {};
   const aiAttributes = tags.ai_attributes || {};
   const aiColors = tags.ai_colors || [];
 
   const categoryName = item.item_categories?.itc_name || 'Uncategorized';
-  // The worker stores ai_colors as an object of hex values, so resolve the
-  // primary colour to a display name rather than indexing it like an array.
   const colorName = getPrimaryColorName(aiColors);
   const fabric = aiAttributes.fabric || '';
   const occasion = aiAttributes.occasion || '';
-  
+  const metalType = aiAttributes.metal_type || '';
+  const gemstoneType = aiAttributes.gemstone_type || '';
+
+  const isJewelry = ['ring', 'necklace', 'earrings', 'bracelet', 'watch', 'pendant', 'bangle', 'anklet', 'jewelry', 'jewelry set']
+    .some(jCat => categoryName.toLowerCase().includes(jCat));
+
   let displayTitle = '';
-  if (colorName && fabric) {
-    displayTitle = `${colorName} ${fabric} ${categoryName}`.trim();
-  } else if (colorName) {
-    displayTitle = `${colorName} ${categoryName}`.trim();
+  if (isJewelry) {
+    const parts = [];
+    if (colorName) parts.push(colorName);
+    if (gemstoneType && !colorName.toLowerCase().includes(gemstoneType.toLowerCase())) parts.push(gemstoneType);
+    if (metalType && !parts.some(p => p.toLowerCase().includes(metalType.toLowerCase()))) parts.push(metalType);
+
+    const finalParts = parts.filter(p => !categoryName.toLowerCase().includes(p.toLowerCase()));
+    finalParts.push(categoryName);
+    displayTitle = finalParts.join(' ').trim();
   } else {
-    displayTitle = categoryName;
+    if (colorName && fabric) {
+      displayTitle = `${colorName} ${fabric} ${categoryName}`.trim();
+    } else if (colorName) {
+      displayTitle = `${colorName} ${categoryName}`.trim();
+    } else {
+      displayTitle = categoryName;
+    }
   }
 
   let displaySubtitle = '';
-  if (fabric && occasion) {
-    displaySubtitle = `${fabric} • ${occasion}`;
-  } else if (fabric || occasion) {
-    displaySubtitle = fabric || occasion;
+  if (isJewelry) {
+    const subParts = [metalType || gemstoneType, occasion].filter(Boolean);
+    displaySubtitle = subParts.length > 0 ? subParts.join(' • ') : (occasion || 'Jewelry Piece');
   } else {
-    displaySubtitle = 'Unknown Details';
+    if (fabric && occasion) {
+      displaySubtitle = `${fabric} • ${occasion}`;
+    } else if (fabric || occasion) {
+      displaySubtitle = fabric || occasion;
+    } else {
+      displaySubtitle = 'Unknown Details';
+    }
   }
+
 
   const images = item.closet_item_images?.map(img => img.cii_url) || [];
   const thumbnailUrl = images.length > 0 ? images[0] : null;
@@ -269,6 +292,7 @@ export const getItemMetadata = async (req, res) => {
     const item = await prisma.closet_items.findUnique({
       where: { ci_id: itemId },
       include: {
+        item_categories: true,
         closet_item_images: true,
         closet_item_ai_tags: true,
         item_ai_responses: {
@@ -286,8 +310,24 @@ export const getItemMetadata = async (req, res) => {
     const aiAttributes = aiTags.ai_attributes || null;
     const aiColors = aiTags.ai_colors || null;
 
+    let statusLabel = 'Processing';
+    if (item.ci_status === 'NEEDS_CLARIFICATION') {
+      statusLabel = 'Needs Info';
+    } else if (item.ci_status === 'ACTIVE') {
+      if (aiTags.is_edited) {
+        statusLabel = 'Edited';
+      } else if ((aiTags.ai_attributes?.final_confidence || 1.0) < 0.70) {
+        statusLabel = 'Needs Review';
+      } else {
+        statusLabel = 'Verified';
+      }
+    }
+
     // Format the unified response
     const metadata = {
+      status: item.ci_status,
+      status_label: statusLabel,
+      categoryName: item.item_categories?.itc_name || null,
       isFavorite: item.ci_is_favorite || false,
       image: item.closet_item_images?.[0]?.cii_url,
       attributes: mapAiAttributesToFlutter(aiAttributes),
@@ -299,6 +339,7 @@ export const getItemMetadata = async (req, res) => {
         ai_colors: aiColors
       }
     };
+
 
     res.status(200).json({
       success: true,
@@ -496,3 +537,103 @@ export const replaceItemImage = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to replace image' });
   }
 };
+
+export const getCategories = async (req, res) => {
+  try {
+    const categories = await prisma.item_categories.findMany({
+      where: { itc_name: { not: 'Uncategorized' } },
+      orderBy: { itc_name: 'asc' }
+    });
+    res.status(200).json({
+      success: true,
+      data: categories.map(c => ({
+        id: c.itc_id,
+        name: c.itc_name,
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch categories' });
+  }
+};
+
+export const clarifyItem = async (req, res) => {
+  try {
+    const userId = req.dbUser?.usr_id;
+    const itemId = parseInt(req.params.id);
+    const { categoryName } = req.body;
+
+    if (!userId) {
+      return res.status(403).json({ success: false, message: 'Forbidden' });
+    }
+
+    if (!categoryName || typeof categoryName !== 'string') {
+      return res.status(400).json({ success: false, message: 'categoryName is required' });
+    }
+
+    const item = await prisma.closet_items.findUnique({
+      where: { ci_id: itemId }
+    });
+
+    if (!item || item.ci_usr_id !== userId) {
+      return res.status(404).json({ success: false, message: 'Item not found' });
+    }
+
+    // Exact case-insensitive match against item_categories
+    let category = await prisma.item_categories.findFirst({
+      where: {
+        itc_name: { equals: categoryName.trim(), mode: 'insensitive' }
+      }
+    });
+
+    if (!category) {
+      category = await prisma.item_categories.create({
+        data: { itc_name: categoryName.trim() }
+      });
+    }
+
+    await prisma.closet_items.update({
+      where: { ci_id: itemId },
+      data: {
+        ci_category_id: category.itc_id,
+        ci_status: 'ACTIVE'
+      }
+    });
+
+    // Update AI tags to reflect the clarified category
+    const existingTags = await prisma.closet_item_ai_tags.findUnique({
+      where: { ciaitag_ci_id: itemId }
+    });
+
+    let currentTags = existingTags?.ciaitag_tags || {};
+    let aiAttributes = { ...(currentTags.ai_attributes || {}) };
+    aiAttributes.category = category.itc_name;
+    currentTags.ai_attributes = aiAttributes;
+    currentTags.is_edited = true;
+
+    await prisma.closet_item_ai_tags.upsert({
+      where: { ciaitag_ci_id: itemId },
+      update: { ciaitag_tags: currentTags },
+      create: { ciaitag_ci_id: itemId, ciaitag_tags: currentTags }
+    });
+
+    const updatedItem = await prisma.closet_items.findUnique({
+      where: { ci_id: itemId },
+      include: {
+        item_categories: true,
+        closet_item_images: true,
+        closet_item_ai_tags: true,
+        closet_item_attributes: true,
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      data: mapItemToDto(updatedItem)
+    });
+  } catch (error) {
+    console.error('Error clarifying item:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to clarify item' });
+  }
+};
+
