@@ -413,6 +413,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  // ── FIX: Profile changes (photo removal, name edits) weren't showing up
+  // back on the dashboard. The sidebar's avatar used a StreamBuilder on
+  // FirebaseAuth.instance.userChanges(), which was assumed to fire after
+  // ProfileScreen called updatePhotoURL()/updateDisplayName() + reload().
+  // In practice that stream doesn't reliably re-emit on every platform, so
+  // the sidebar (and the dashboard greeting, which reads
+  // FirebaseAuth.instance.currentUser directly) kept showing stale data.
+  //
+  // Fix: navigate to Profile with an *awaited* push. When we come back,
+  // explicitly reload the current user and call setState so both the
+  // sidebar avatar and the dashboard greeting re-read fresh data instead
+  // of depending solely on the stream.
+  Future<void> _openProfile() async {
+    await Navigator.pushNamed(context, '/profile');
+    await FirebaseAuth.instance.currentUser?.reload();
+    if (mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isDesktop = MediaQuery.of(context).size.width > 900;
@@ -458,6 +476,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     setState(() => _selectedIndex = i);
                   }
                 },
+                onProfileTap: () {
+                  Navigator.pop(context); // close the drawer first
+                  _openProfile();
+                },
               ),
             )
           : null,
@@ -495,6 +517,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       setState(() => _selectedIndex = i);
                     }
                   },
+                  onProfileTap: _openProfile,
                 ),
               ),
             ),
@@ -563,11 +586,13 @@ class _SidebarContent extends StatelessWidget {
   final int selectedIndex;
   final List<Map<String, dynamic>> navItems;
   final Function(int) onSelected;
+  final VoidCallback onProfileTap;
 
   const _SidebarContent({
     required this.selectedIndex,
     required this.navItems,
     required this.onSelected,
+    required this.onProfileTap,
   });
 
   @override
@@ -575,7 +600,7 @@ class _SidebarContent extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.userChanges(),
       builder: (context, snapshot) {
-        final user = snapshot.data;
+        final user = snapshot.data ?? FirebaseAuth.instance.currentUser;
         final displayName =
             user?.displayName ?? user?.email?.split('@')[0] ?? 'User';
 
@@ -646,39 +671,59 @@ class _SidebarContent extends StatelessWidget {
               ),
               Container(height: 1, color: AppColors.border),
               const SizedBox(height: 16),
+
+              // "Ask AI Stylist" entry point.
               GestureDetector(
                 onTap: () => Navigator.pushNamed(context, '/prompt'),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-          decoration: BoxDecoration(
-            color: JewelVaultColors.accentGoldLight,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.auto_awesome, color: JewelVaultColors.accentGold, size: 20),
-              const SizedBox(width: 14),
-              Text(
-                'Ask AI Stylist',
-                style: JewelVaultTypography.labelLarge.copyWith(color: JewelVaultColors.accentGold),
-        ),
-      ],
-    ),
-  ),
-),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 13,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentGoldLight,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.auto_awesome,
+                        color: AppColors.accentGold,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 14),
+                      Text(
+                        'Ask AI Stylist',
+                        style: AppTypography.labelLarge.copyWith(
+                          color: AppColors.accentGold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // FIX: was `onTap: () => Navigator.pushNamed(context, '/profile')`
+              // — a fire-and-forget push with no way to know when the user
+              // came back, so profile edits/removals never propagated to
+              // the sidebar or dashboard. Now delegates to onProfileTap,
+              // which awaits the navigation and refreshes state on return.
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                onTap: () => Navigator.pushNamed(context, '/profile'),
+                onTap: onProfileTap,
                 leading: CircleAvatar(
                   radius: 18,
                   backgroundColor: AppColors.accentGoldLight,
-                  child: Text(
-                    displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U',
-                    style: AppTypography.labelLarge.copyWith(
-                      color: AppColors.accentGold,
-                    ),
-                  ),
+                  backgroundImage: (user?.photoURL != null && user!.photoURL!.isNotEmpty)
+                      ? NetworkImage(user.photoURL!)
+                      : null,
+                  child: (user?.photoURL == null || user!.photoURL!.isEmpty)
+                      ? Text(
+                          displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U',
+                          style: AppTypography.labelLarge.copyWith(color: AppColors.accentGold),
+                        )
+                      : null,
                 ),
                 title: Text(
                   displayName,
@@ -800,7 +845,6 @@ class _DashboardView extends StatelessWidget {
           // ── STAT CARDS ──────────────────────────────────────
           LayoutBuilder(
             builder: (ctx, constraints) {
-              final w = (constraints.maxWidth - 48) / 4;
               final isNarrow = constraints.maxWidth < 700;
               return isNarrow
                   ? Column(
@@ -1836,11 +1880,11 @@ class _OutfitsView extends StatelessWidget {
     final results = <List<ClosetItem>>[];
     for (int i = 0; i < garments.length && results.length < 6; i++) {
       final outfit = [garments[i]];
-      if (jewelry.length > i % jewelry.length)
-        outfit.add(jewelry[i % jewelry.length]);
+      if (jewelry.isNotEmpty) outfit.add(jewelry[i % jewelry.length]);
       if (bags.isNotEmpty) outfit.add(bags[i % bags.length]);
-      if (accessories.isNotEmpty && i % 2 == 0)
+      if (accessories.isNotEmpty && i % 2 == 0) {
         outfit.add(accessories[i % accessories.length]);
+      }
       results.add(outfit);
     }
     return results;

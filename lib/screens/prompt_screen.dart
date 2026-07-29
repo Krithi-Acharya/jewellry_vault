@@ -104,7 +104,6 @@ class _PromptScreenState extends State<PromptScreen> {
             const SizedBox(height: 16),
 
             // Submit button — shows a spinner while "loading"
-            
             ElevatedButton(
               onPressed: _isLoading ? null : _submitPrompt,
               style: ElevatedButton.styleFrom(
