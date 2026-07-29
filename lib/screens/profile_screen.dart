@@ -9,6 +9,7 @@ const kEmerald = Color(0xFF1B4332);
 const kBorder = Color(0xFFE5DDD0);
 const kText = Color(0xFF1A1815);
 const kGrey = Color(0xFF6B6258);
+const kCard = Color(0xFFFFFFFF);
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -77,21 +78,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // Clears the photo, both locally and on the Firebase profile.
+  // Clears the photo locally; actual removal happens on Save.
   Future<void> removePhoto() async {
     setState(() => photoUrl = null);
-    await user?.updatePhotoURL(null);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Photo removed')),
+        const SnackBar(content: Text('Photo removed — tap Save Changes to confirm')),
       );
     }
   }
 
-  // Sends the updated name + photo to Firebase so it's actually saved.
+  // Persists whatever photoUrl currently is (new photo, or null if removed)
+  // plus the name, then reloads so the dashboard picks up the change.
+  //
+  // NOTE: passing an empty string instead of null when clearing the photo
+  // is required — Firebase's native SDKs treat updatePhotoURL(null) as
+  // "leave the field unchanged," not "clear it," so null alone silently
+  // fails to remove the photo on the account.
   Future<void> saveChanges() async {
     await user?.updateDisplayName(nameController.text);
-    await user?.updatePhotoURL(photoUrl);
+    await user?.updatePhotoURL(photoUrl ?? '');
+    await user?.reload();
     setState(() => isEditing = false);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -112,97 +119,199 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         backgroundColor: kBg,
         elevation: 0,
-        title: const Text('Profile', style: TextStyle(color: kText)),
+        title: const Text(
+          'Profile',
+          style: TextStyle(color: kText, fontWeight: FontWeight.w600),
+        ),
         iconTheme: const IconThemeData(color: kText),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            // Avatar with an edit button on top
-            Stack(
-              children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundColor: kBorder,
-                  backgroundImage: photoUrl != null ? NetworkImage(photoUrl!) : null,
-                  child: photoUrl == null
-                      ? const Icon(Icons.person, size: 50, color: Colors.white)
-                      : null,
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: GestureDetector(
-                    onTap: isUploadingPhoto ? null : pickAndUploadPhoto,
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: const BoxDecoration(color: kEmerald, shape: BoxShape.circle),
-                      child: isUploadingPhoto
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Icon(Icons.edit, size: 16, color: Colors.white),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 440),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 32),
+                decoration: BoxDecoration(
+                  color: kCard,
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: kBorder),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 30,
+                      offset: const Offset(0, 12),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+                child: Column(
+                  children: [
+                    // Avatar with an edit button on top
+                    Stack(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: kBorder, width: 3),
+                          ),
+                          child: CircleAvatar(
+                            radius: 54,
+                            backgroundColor: kBorder,
+                            backgroundImage: photoUrl != null ? NetworkImage(photoUrl!) : null,
+                            child: photoUrl == null
+                                ? const Icon(Icons.person, size: 52, color: Colors.white)
+                                : null,
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 2,
+                          right: 2,
+                          child: GestureDetector(
+                            onTap: isUploadingPhoto ? null : pickAndUploadPhoto,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: kEmerald,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: kCard, width: 2),
+                              ),
+                              child: isUploadingPhoto
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                    )
+                                  : const Icon(Icons.edit, size: 16, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
 
-            // Remove Photo — only shows up if there's actually a photo set
-            if (photoUrl != null)
-              TextButton(
-                onPressed: isUploadingPhoto ? null : removePhoto,
-                child: const Text('Remove Photo', style: TextStyle(color: Colors.red, fontSize: 12)),
+                    // Remove Photo — only shows up if there's actually a photo set
+                    if (photoUrl != null) ...[
+                      const SizedBox(height: 12),
+                      TextButton.icon(
+                        onPressed: isUploadingPhoto ? null : removePhoto,
+                        icon: const Icon(Icons.delete_outline, size: 16, color: Colors.redAccent),
+                        label: const Text(
+                          'Remove Photo',
+                          style: TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.w500),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 28),
+
+                    // Name — either plain text or an editable field
+                    isEditing
+                        ? TextField(
+                            controller: nameController,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: kText),
+                            decoration: InputDecoration(
+                              hintText: 'Your name',
+                              filled: true,
+                              fillColor: kBg,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: kBorder),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: kBorder),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: kEmerald, width: 1.5),
+                              ),
+                            ),
+                          )
+                        : Text(
+                            nameController.text.isEmpty ? 'No name set' : nameController.text,
+                            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: kText),
+                          ),
+
+                    const SizedBox(height: 6),
+
+                    // Email — read only, since it's tied to the login itself
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.mail_outline, size: 14, color: kGrey),
+                        const SizedBox(width: 6),
+                        Text(
+                          user?.email ?? '',
+                          style: const TextStyle(color: kGrey, fontSize: 14),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 32),
+                    Divider(color: kBorder, height: 1),
+                    const SizedBox(height: 28),
+
+                    // Edit / Save toggle button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: isEditing ? saveChanges : () => setState(() => isEditing = true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: kEmerald,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(isEditing ? Icons.check : Icons.edit_outlined, size: 18),
+                            const SizedBox(width: 8),
+                            Text(isEditing ? 'Save Changes' : 'Edit Profile'),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Logout
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: logout,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.logout, size: 18),
+                            SizedBox(width: 8),
+                            Text('Log Out'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-
-            const SizedBox(height: 24),
-
-            // Name — either plain text or an editable field
-            isEditing
-                ? TextField(
-                    controller: nameController,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    decoration: const InputDecoration(hintText: 'Your name'),
-                  )
-                : Text(
-                    nameController.text.isEmpty ? 'No name set' : nameController.text,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: kText),
-                  ),
-            const SizedBox(height: 4),
-
-            // Email — read only, since it's tied to the login itself
-            Text(user?.email ?? '', style: const TextStyle(color: kGrey)),
-            const SizedBox(height: 32),
-
-            // Edit / Save toggle button
-            ElevatedButton(
-              onPressed: isEditing ? saveChanges : () => setState(() => isEditing = true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: kEmerald,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: Text(isEditing ? 'Save Changes' : 'Edit Profile'),
             ),
-            const SizedBox(height: 16),
-
-            // Logout
-            OutlinedButton(
-              onPressed: logout,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.red,
-                side: const BorderSide(color: Colors.red),
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('Log Out'),
-            ),
-          ],
+          ),
         ),
       ),
     );
