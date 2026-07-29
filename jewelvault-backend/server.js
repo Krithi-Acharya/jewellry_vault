@@ -316,5 +316,136 @@ app.delete('/api/closet/:id', verifyToken, async (req, res) => {
   }
 });
 
+// ===================== OUTFITS ("Lookbook") =====================
+
+function serializeOutfit(row, itemIds) {
+  return {
+    id: String(row.so_id),
+    name: row.so_name,
+    imageUrl: row.so_image_url || null,
+    season: row.so_season,
+    occasion: row.so_occasion,
+    tags: row.so_tags || [],
+    isFavorite: row.so_is_favorite,
+    itemIds: (itemIds || []).map(String),
+    createdAt: row.so_created_at,
+  };
+}
+
+const OUTFIT_SELECT = `
+  SELECT so.*
+  FROM saved_outfits so
+`;
+
+async function getOutfitItemIds(outfitId) {
+  const result = await db.query(
+    'SELECT soi_ci_id FROM saved_outfit_items WHERE soi_so_id = $1',
+    [outfitId]
+  );
+  return result.rows.map((r) => r.soi_ci_id);
+}
+
+// GET /api/outfits — every saved look for the logged-in user.
+app.get('/api/outfits', verifyToken, async (req, res) => {
+  try {
+    const result = await db.query(
+      `${OUTFIT_SELECT} WHERE so.so_usr_id = $1 ORDER BY so.so_created_at DESC`,
+      [req.dbUserId]
+    );
+    const outfits = await Promise.all(
+      result.rows.map(async (row) =>
+        serializeOutfit(row, await getOutfitItemIds(row.so_id))
+      )
+    );
+    res.json(outfits);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch outfits.' });
+  }
+});
+
+// POST /api/outfits/photo — the flow the Lookbook "Save Outfit" button
+// actually uses: a rendered PNG of the outfit board, plus the metadata
+// typed into the builder (name/season/occasion/tags/itemIds/isFavorite)
+// sent alongside it as multipart fields.
+app.post(
+  '/api/outfits/photo',
+  verifyToken,
+  upload.single('image'),
+  async (req, res) => {
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ error: 'No image uploaded (expected field "image").' });
+    }
+
+    const { name, season, occasion, isFavorite } = req.body;
+    let tags = [];
+    let itemIds = [];
+    try {
+      if (req.body.tags) tags = JSON.parse(req.body.tags);
+      if (req.body.itemIds) itemIds = JSON.parse(req.body.itemIds);
+    } catch (e) {
+      return res
+        .status(400)
+        .json({ error: 'tags and itemIds must be JSON array strings.' });
+    }
+
+    try {
+      const mimeType = req.file.mimetype || 'image/png';
+      const base64 = req.file.buffer.toString('base64');
+      const imageUrl = `data:${mimeType};base64,${base64}`;
+
+      const insertResult = await db.query(
+        `INSERT INTO saved_outfits
+           (so_usr_id, so_name, so_season, so_occasion, so_tags, so_is_favorite, so_image_url)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING *`,
+        [
+          req.dbUserId,
+          (name && name.trim()) || 'Untitled Look',
+          season || null,
+          occasion || null,
+          JSON.stringify(tags),
+          isFavorite === 'true' || isFavorite === true,
+          imageUrl,
+        ]
+      );
+      const outfit = insertResult.rows[0];
+
+      if (itemIds.length) {
+        const values = itemIds.map((_, i) => `($1, $${i + 2})`).join(', ');
+        await db.query(
+          `INSERT INTO saved_outfit_items (soi_so_id, soi_ci_id) VALUES ${values}`,
+          [outfit.so_id, ...itemIds]
+        );
+      }
+
+      res.status(201).json(serializeOutfit(outfit, itemIds));
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to save outfit photo.' });
+    }
+  }
+);
+
+// DELETE /api/outfits/:id
+app.delete('/api/outfits/:id', verifyToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await db.query(
+      'DELETE FROM saved_outfits WHERE so_id = $1 AND so_usr_id = $2 RETURNING so_id',
+      [id, req.dbUserId]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Outfit not found.' });
+    }
+    res.status(204).send();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete outfit.' });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Secure Backend running on port ${PORT}`));

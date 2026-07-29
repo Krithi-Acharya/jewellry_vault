@@ -171,9 +171,8 @@ class ApiService {
   }
 
   /// Fetch every saved look ("outfit") for the logged-in user.
-  /// Each entry is expected to look like: { id, itemIds, createdAt }.
-  /// Item details/images are resolved client-side against the closet list
-  /// that's already loaded, so the backend doesn't need to duplicate them.
+  /// Each entry looks like:
+  /// { id, imageUrl, name, season, occasion, tags, itemIds, isFavorite, createdAt }
   static Future<List<Map<String, dynamic>>> fetchOutfits() async {
     final headers = await _authHeaders();
     final response = await http.get(
@@ -188,7 +187,7 @@ class ApiService {
     throw Exception('Failed to load outfits (${response.statusCode})');
   }
 
-  /// Combine selected closet items into a new saved look.
+  /// Combine selected closet items into a new saved look (no board photo).
   static Future<Map<String, dynamic>> createOutfit(List<String> itemIds) async {
     final headers = await _authHeaders();
     final response = await http.post(
@@ -203,13 +202,20 @@ class ApiService {
     throw Exception('Failed to create look (${response.statusCode})');
   }
 
-  /// Uploads a single photo of a full outfit and saves it directly as a
-  /// look — this is the flow the Outfits tab's camera/gallery picker
-  /// actually uses (as opposed to [createOutfit], which composes a look
-  /// out of already-catalogued closet items). Mirrors [analyzeItemImage]'s
-  /// multipart upload pattern. Expects the server to store the image and
-  /// return the saved look in one shot: { id, imageUrl, createdAt }.
-  static Future<Map<String, dynamic>> createOutfitFromPhoto(XFile image) async {
+  /// Uploads the rendered outfit-board photo, along with the metadata typed
+  /// into the builder (name/season/occasion/tags/which closet items are on
+  /// the board/favorite), and saves it as one look in the lookbook.
+  /// Expects the server to store the image and return the saved look:
+  /// { id, imageUrl, name, season, occasion, tags, itemIds, isFavorite, createdAt }
+  static Future<Map<String, dynamic>> createOutfitFromPhoto(
+    XFile image, {
+    String? name,
+    String? season,
+    String? occasion,
+    List<String> tags = const [],
+    List<String> itemIds = const [],
+    bool isFavorite = false,
+  }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       throw Exception('Not logged in');
@@ -220,6 +226,13 @@ class ApiService {
       'POST',
       Uri.parse('$baseUrl/outfits/photo'),
     )..headers['Authorization'] = 'Bearer $token';
+
+    if (name != null) request.fields['name'] = name;
+    if (season != null) request.fields['season'] = season;
+    if (occasion != null) request.fields['occasion'] = occasion;
+    request.fields['tags'] = jsonEncode(tags);
+    request.fields['itemIds'] = jsonEncode(itemIds);
+    request.fields['isFavorite'] = isFavorite.toString();
 
     final bytes = await image.readAsBytes();
     request.files.add(

@@ -3617,22 +3617,20 @@ class _OutfitsViewState extends State<_OutfitsView> {
         name: 'outfit-${DateTime.now().millisecondsSinceEpoch}.png',
         mimeType: 'image/png',
       );
-      final outfit = await ApiService.createOutfitFromPhoto(xfile);
-      if (!mounted) return;
-      final enriched = {
-        ...outfit,
-        'name': _nameController.text.trim().isEmpty
+      final outfit = await ApiService.createOutfitFromPhoto(
+        xfile,
+        name: _nameController.text.trim().isEmpty
             ? 'Untitled Look'
             : _nameController.text.trim(),
-        'season': _season,
-        'occasion': _occasion,
-        'tags': _tags.toList(),
-        'itemIds': _pieces.map((p) => p.item.id).toList(),
-        'createdAt': DateTime.now().toIso8601String(),
-        'isFavorite': _isFavoriteDraft,
-      };
+        season: _season,
+        occasion: _occasion,
+        tags: _tags.toList(),
+        itemIds: _pieces.map((p) => p.item.id).toList(),
+        isFavorite: _isFavoriteDraft,
+      );
+      if (!mounted) return;
       setState(() {
-        _looks = [enriched, ..._looks];
+        _looks = [outfit, ..._looks];
         _isSaving = false;
       });
       _cancelBuilding();
