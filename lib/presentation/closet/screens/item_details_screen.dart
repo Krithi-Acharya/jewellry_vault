@@ -752,9 +752,13 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
   /// Hero image for the item. When [aspectRatio] is supplied the image keeps
   /// that shape (used on wider layouts); otherwise it fills the given space.
   Widget _buildHeroImage(String? imageUrl, {double? aspectRatio}) {
-    final Widget image = imageUrl != null
+    String? resolvedUrl = imageUrl;
+    if (resolvedUrl != null && resolvedUrl.startsWith('/')) {
+      resolvedUrl = '${AppConfig.apiBaseUrl.replaceAll('/api/v1', '')}$resolvedUrl';
+    }
+    final Widget image = resolvedUrl != null
         ? Image.network(
-            imageUrl,
+            resolvedUrl,
             fit: BoxFit.cover,
             alignment: Alignment.topCenter,
             errorBuilder: (context, error, stackTrace) => Container(

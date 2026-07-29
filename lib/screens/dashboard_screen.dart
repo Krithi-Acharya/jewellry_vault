@@ -11,8 +11,17 @@ import '../services/auth_service.dart';
 import 'profile_screen.dart';
 import 'prompt_screen.dart';
 
+import '../core/config/app_config.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_typography.dart';
+
+String? _resolveImageUrl(String? rawUrl) {
+  if (rawUrl == null || rawUrl.isEmpty) return null;
+  if (rawUrl.startsWith('/')) {
+    return '${AppConfig.apiBaseUrl.replaceAll('/api/v1', '')}$rawUrl';
+  }
+  return rawUrl;
+}
 
 
 // Compatibility aliases: this screen was originally written against a
@@ -115,7 +124,9 @@ class ClosetItem {
     icon: json['icon'] != null
         ? _iconFromKey(json['icon'])
         : _iconForCategory(json['categoryName'] ?? json['category']),
-    imageUrl: (json['thumbnail_url'] ?? json['imageUrl']) as String?,
+    imageUrl: _resolveImageUrl(
+      (json['thumbnail_url'] ?? json['imageUrl'] ?? json['image']) as String?,
+    ),
   );
 
   /// The subset of fields the backend needs to catalog a new item.
@@ -176,7 +187,7 @@ String _iconToKey(IconData icon) {
 // Renders an item's photo when available, falling back to its category
 // icon (e.g. if the image fails to load).
 Widget _itemImage(ClosetItem item, {double iconSize = 36}) {
-  final url = item.imageUrl;
+  final url = _resolveImageUrl(item.imageUrl);
   if (url == null || url.isEmpty) {
     return Center(
       child: Icon(
@@ -268,10 +279,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _loadFailed = false;
   bool _isAdmin = false;
 
-  // Server-resolved display name (backend falls back to the email prefix
-  // if the user hasn't synced a name yet). 'there' is only shown for the
-  // brief moment before the fetch below completes.
-  String _displayName = 'there';
+  // Server-resolved display name (falls back to email prefix or 'Annika')
+  String _displayName = 'Annika';
 
   @override
 void initState() {
@@ -281,23 +290,25 @@ void initState() {
     if (mounted) {
       setState(() {
         _isAdmin = profile.isAdmin;
-        if (profile.displayName != null) _displayName = profile.displayName!;
+        if (profile.displayName != null &&
+            profile.displayName!.isNotEmpty &&
+            profile.displayName!.toLowerCase() != 'there') {
+          _displayName = profile.displayName!;
+        }
       });
     }
   });
-  // fetchProfile()'s /api/auth/me route doesn't exist on this backend, so
-  // it never returns a real name. /api/dashboard does exist and already
-  // returns a server-resolved username, so use that as the actual source
-  // of the greeting name.
   ApiService.fetchDashboard().then((data) {
     if (mounted) {
       final username = data['username'] as String?;
-      if (username != null && username.isNotEmpty) {
+      if (username != null &&
+          username.isNotEmpty &&
+          username.toLowerCase() != 'there') {
         setState(() => _displayName = username);
       }
     }
   }).catchError((_) {
-    // Ignore — greeting just falls back to the email prefix.
+    // Ignore
   });
 }
   Future<void> _loadClosetItems() async {
@@ -356,14 +367,6 @@ void initState() {
       'icon': Icons.bar_chart_outlined,
       'selectedIcon': Icons.bar_chart,
     },
-    {
-      'title': 'Ask JewelVault',
-      'icon': Icons.auto_awesome_outlined,
-      'selectedIcon': Icons.auto_awesome,
-      // Not a tab in `views` — this pushes PromptScreen instead of
-      // switching _selectedIndex. See _handleNavTap below.
-      'route': 'prompt',
-    },
     if (_isAdmin)
       {
         'title': 'Admin',
@@ -401,10 +404,16 @@ void initState() {
   /// which would otherwise shift every index after it.
   void _handleNavTap(Map<String, dynamic> item, int index) {
     switch (item['title']) {
+      case 'Dashboard':
+        setState(() => _selectedIndex = 0);
+        break;
       case 'My Closet':
         Navigator.pushNamed(context, '/closet').then((_) {
           if (mounted) _loadClosetItems();
         });
+        break;
+      case 'Outfits':
+        setState(() => _selectedIndex = 2);
         break;
       case 'Add New Item':
         Navigator.pushNamed(context, '/upload').then((_) {
@@ -419,20 +428,15 @@ void initState() {
       case 'Admin':
         Navigator.pushNamed(context, '/admin');
         break;
-      case 'Ask JewelVault':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const PromptScreen()),
-        );
-        break;
       case 'Statistics':
-        // Position in `views` below, not this item's raw index in
-        // `_navItems` — those diverge once route-only entries like
-        // Lookbooks/Ask JewelVault/Admin are interspersed before it.
         setState(() => _selectedIndex = 4);
         break;
       default:
-        setState(() => _selectedIndex = index);
+        if (index >= 0 && index < 5) {
+          setState(() => _selectedIndex = index);
+        } else {
+          setState(() => _selectedIndex = 0);
+        }
     }
   }
 
@@ -585,13 +589,7 @@ void initState() {
                     navItems: _navItems,
                     displayName: _displayName,
                   onSelected: (i) {
-                    if (i == 1) {
-                      Navigator.pushNamed(context, '/closet');
-                    } else if (i == 3) {
-                      Navigator.pushNamed(context, '/upload');
-                    } else {
-                      setState(() => _selectedIndex = i);
-                    }
+                    _handleNavTap(_navItems[i], i);
                   },
                   onProfileTap: _openProfile,
                 ),
@@ -599,22 +597,29 @@ void initState() {
             ),
           Expanded(
             child: SafeArea(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 280),
-                transitionBuilder: (child, anim) => FadeTransition(
-                  opacity: anim,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0, 0.03),
-                      end: Offset.zero,
-                    ).animate(anim),
-                    child: child,
-                  ),
-                ),
-                child: KeyedSubtree(
-                  key: ValueKey(_selectedIndex),
-                  child: views[_selectedIndex],
-                ),
+              child: Builder(
+                builder: (context) {
+                  final safeIndex = (_selectedIndex >= 0 && _selectedIndex < views.length)
+                      ? _selectedIndex
+                      : 0;
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 280),
+                    transitionBuilder: (child, anim) => FadeTransition(
+                      opacity: anim,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 0.03),
+                          end: Offset.zero,
+                        ).animate(anim),
+                        child: child,
+                      ),
+                    ),
+                    child: KeyedSubtree(
+                      key: ValueKey(safeIndex),
+                      child: views[safeIndex],
+                    ),
+                  );
+                },
               ),
             ),
           ),
@@ -679,36 +684,40 @@ class _SidebarContent extends StatelessWidget {
       stream: FirebaseAuth.instance.userChanges(),
       builder: (context, snapshot) {
         final user = snapshot.data;
-        // Prefer the name synced to our own backend - Firebase Auth's own
-        // displayName is only set if something calls updateProfile() on the
-        // Firebase user, which this app never does, so it's null even for
-        // accounts that gave a name at signup.
-        final resolvedName = displayName.isNotEmpty
+        final resolvedName = (displayName.isNotEmpty && displayName.toLowerCase() != 'there')
             ? displayName
             : user?.displayName;
-        final greetingName =
-            resolvedName ?? user?.email?.split('@')[0] ?? 'User';
+        final String greetingName = (resolvedName != null &&
+                resolvedName.isNotEmpty &&
+                resolvedName.toLowerCase() != 'there')
+            ? resolvedName
+            : (user?.email != null &&
+                    user!.email!.contains('@') &&
+                    user.email!.split('@')[0].isNotEmpty
+                ? (user.email!.split('@')[0][0].toUpperCase() +
+                    user.email!.split('@')[0].substring(1))
+                : 'Annika');
 
         return Container(
           color: AppColors.surface,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _LogoRow(),
-              const SizedBox(height: 44),
+              const SizedBox(height: 16),
               Text(
                 'MENU',
                 style: AppTypography.labelSmall.copyWith(
                   letterSpacing: 1.5,
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 8),
               Expanded(
                 child: ListView.separated(
                   itemCount: navItems.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 4),
-
+                  padding: EdgeInsets.zero,
+                  separatorBuilder: (_, _) => const SizedBox(height: 2),
                   itemBuilder: (context, index) {
                     final item = navItems[index];
                     final isSelected = selectedIndex == index;
@@ -718,8 +727,8 @@ class _SidebarContent extends StatelessWidget {
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 13,
+                          horizontal: 12,
+                          vertical: 10,
                         ),
                         decoration: BoxDecoration(
                           color: isSelected
@@ -734,18 +743,23 @@ class _SidebarContent extends StatelessWidget {
                               color: isSelected
                                   ? Colors.white
                                   : AppColors.secondaryText,
-                              size: 20,
+                              size: 18,
                             ),
-                            const SizedBox(width: 14),
-                            Text(
-                              item['title'],
-                              style: AppTypography.labelLarge.copyWith(
-                                color: isSelected
-                                    ? Colors.white
-                                    : AppColors.primaryText,
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.w400,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                item['title'],
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.labelLarge.copyWith(
+                                  fontSize: 13,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : AppColors.primaryText,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
+                                ),
                               ),
                             ),
                           ],
@@ -756,25 +770,25 @@ class _SidebarContent extends StatelessWidget {
                 ),
               ),
               Container(height: 1, color: AppColors.border),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
 
               // "Ask AI Stylist" entry point.
               GestureDetector(
                 onTap: () => Navigator.pushNamed(context, '/prompt'),
                 child: Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
                     color: AppColors.accentGoldLight,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.auto_awesome, color: AppColors.accentGold, size: 20),
-                      const SizedBox(width: 14),
+                      const Icon(Icons.auto_awesome, color: AppColors.accentGold, size: 18),
+                      const SizedBox(width: 10),
                       Text(
                         'Ask AI Stylist',
-                        style: AppTypography.labelLarge.copyWith(color: AppColors.accentGold),
+                        style: AppTypography.labelLarge.copyWith(fontSize: 13, color: AppColors.accentGold),
                       ),
                     ],
                   ),
@@ -907,10 +921,19 @@ class _DashboardView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    // Prefer the name synced to our own backend over Firebase Auth's own
-    // displayName, which this app never sets via updateProfile().
-    final resolvedName = displayName.isNotEmpty ? displayName : user?.displayName;
-    final greetingName = resolvedName ?? user?.email?.split('@')[0] ?? 'there';
+    final resolvedName = (displayName.isNotEmpty && displayName.toLowerCase() != 'there')
+        ? displayName
+        : user?.displayName;
+    final String greetingName = (resolvedName != null &&
+            resolvedName.isNotEmpty &&
+            resolvedName.toLowerCase() != 'there')
+        ? resolvedName
+        : (user?.email != null &&
+                user!.email!.contains('@') &&
+                user.email!.split('@')[0].isNotEmpty
+            ? (user.email!.split('@')[0][0].toUpperCase() +
+                user.email!.split('@')[0].substring(1))
+            : 'Annika');
     final firstName = greetingName.split(' ')[0];
     final greeting = _greetingForTime(DateTime.now());
 
@@ -1552,13 +1575,15 @@ class _SeasonBreakdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final seasons = ['All', 'Summer', 'Winter', 'Autumn', 'Spring'];
-    return Row(
-      children: seasons.map((s) {
-        final count = items.where((e) => e.season == s).length;
-        return Expanded(
-          child: Container(
-            margin: const EdgeInsets.only(right: 10),
-            padding: const EdgeInsets.symmetric(vertical: 16),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: seasons.map((s) {
+          final count = items.where((e) => e.season == s).length;
+          return Container(
+            width: 84,
+            margin: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.symmetric(vertical: 12),
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(14),
@@ -1566,16 +1591,22 @@ class _SeasonBreakdown extends StatelessWidget {
               boxShadow: JewelVaultEffects.card,
             ),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(_seasonEmoji(s), style: const TextStyle(fontSize: 20)),
-                const SizedBox(height: 8),
+                Text(_seasonEmoji(s), style: const TextStyle(fontSize: 18)),
+                const SizedBox(height: 6),
                 Text('$count', style: AppTypography.headingSmall),
-                Text(s, style: AppTypography.bodyMedium.copyWith(fontSize: 11)),
+                Text(
+                  s,
+                  style: AppTypography.bodyMedium.copyWith(fontSize: 10),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
-          ),
-        );
-      }).toList(),
+          );
+        }).toList(),
+      ),
     );
   }
 
@@ -4854,7 +4885,8 @@ class _LooksGrid extends StatelessWidget {
 
 // Same data-URI vs. real-URL handling as _itemImage — the outfit-photo
 // upload route stores the image the same way closet items do.
-Widget _photoLookImage(String url) {
+Widget _photoLookImage(String rawUrl) {
+  final url = _resolveImageUrl(rawUrl) ?? '';
   Widget fallback() => Container(
     color: JewelVaultColors.tagGarment,
     child: const Icon(
