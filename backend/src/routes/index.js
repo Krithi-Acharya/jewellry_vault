@@ -6,6 +6,7 @@ import jobRoutes from './jobs.js';
 import recommendationRoutes from './recommendations.js';
 import lookbookRoutes from './lookbooks.js';
 import adminRoutes from './admin.js';
+import outfitRoutes from './outfits.js';
 
 const router = Router();
 
@@ -16,6 +17,7 @@ router.use('/jobs', jobRoutes);
 router.use('/recommendations', recommendationRoutes);
 router.use('/lookbooks', lookbookRoutes);
 router.use('/admin', adminRoutes);
+router.use('/outfits', outfitRoutes);
 
 export default router;
 
