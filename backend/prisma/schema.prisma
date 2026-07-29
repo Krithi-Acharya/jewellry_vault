@@ -298,6 +298,7 @@ model users {
   usr_display_name        String?                   @db.VarChar(255)
   usr_profile_picture_url String?                   @db.VarChar(1024)
   usr_gender              String?                   @db.VarChar(50)
+  usr_role                String                    @default("user") @db.VarChar(20)
   usr_created_at          DateTime?                 @default(now()) @db.Timestamp(6)
   usr_updated_at          DateTime?                 @default(now()) @updatedAt @db.Timestamp(6)
   audit_logs              audit_logs[]

@@ -4,7 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
-import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import '../api_service.dart';
 import '../services/auth_service.dart';
@@ -13,8 +13,7 @@ import 'prompt_screen.dart';
 
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_typography.dart';
-import '../core/theme/app_radius.dart';
-import '../core/theme/app_spacing.dart';
+
 
 // Compatibility aliases: this screen was originally written against a
 // local JewelVaultColors/JewelVaultTypography design system that has since
@@ -97,18 +96,26 @@ class ClosetItem {
   );
 
   /// Builds a ClosetItem from the JSON shape returned by the backend API.
+  ///
+  /// The real item DTO (see backend/src/controllers/itemController.js)
+  /// uses display_title/categoryName rather than the title/category/brand/
+  /// color/season/wornCount/matchScore fields this model was originally
+  /// written against, and has no equivalent for most of them. Those fields
+  /// fall back to honest defaults rather than being invented.
   factory ClosetItem.fromJson(Map<String, dynamic> json) => ClosetItem(
     id: json['id'].toString(),
-    title: json['title'] ?? '',
-    category: json['category'] ?? 'Garment',
+    title: json['display_title'] ?? json['title'] ?? '',
+    category: json['categoryName'] ?? json['category'] ?? 'Garment',
     brand: json['brand'] ?? 'Unknown',
     color: json['color'] ?? '—',
     season: json['season'] ?? 'All',
     wornCount: json['wornCount'] ?? 0,
     matchScore: (json['matchScore'] as num?)?.toDouble() ?? 80,
     isFavorite: json['isFavorite'] ?? false,
-    icon: _iconFromKey(json['icon'] ?? 'checkroom_outlined'),
-    imageUrl: json['imageUrl'] as String?,
+    icon: json['icon'] != null
+        ? _iconFromKey(json['icon'])
+        : _iconForCategory(json['categoryName'] ?? json['category']),
+    imageUrl: (json['thumbnail_url'] ?? json['imageUrl']) as String?,
   );
 
   /// The subset of fields the backend needs to catalog a new item.
@@ -140,6 +147,23 @@ IconData _iconFromKey(String key) {
   }
 }
 
+/// Picks a reasonable icon straight from the item's real category name,
+/// since the backend DTO doesn't carry an icon field of its own.
+IconData _iconForCategory(String? categoryName) {
+  switch (categoryName?.toLowerCase()) {
+    case 'ring':
+    case 'necklace':
+    case 'earrings':
+    case 'bracelet':
+    case 'watch':
+      return Icons.diamond_outlined;
+    case 'bag':
+      return Icons.shopping_bag_outlined;
+    default:
+      return Icons.checkroom_outlined;
+  }
+}
+
 String _iconToKey(IconData icon) {
   if (icon == Icons.diamond_outlined) return 'diamond_outlined';
   if (icon == Icons.shopping_bag_outlined) return 'shopping_bag_outlined';
@@ -150,7 +174,7 @@ String _iconToKey(IconData icon) {
 }
 
 // Renders an item's photo when available, falling back to its category
-// icon (e.g. for the offline/seed items, or if the image fails to load).
+// icon (e.g. if the image fails to load).
 Widget _itemImage(ClosetItem item, {double iconSize = 36}) {
   final url = item.imageUrl;
   if (url == null || url.isEmpty) {
@@ -226,204 +250,6 @@ Widget _itemImage(ClosetItem item, {double iconSize = 36}) {
   );
 }
 
-// ─────────────────────────────────────────────
-//  SEED DATA
-// ─────────────────────────────────────────────
-
-final List<ClosetItem> _seedItems = [
-  ClosetItem(
-    id: '1',
-    title: 'Silk Slip Dress',
-    category: 'Garment',
-    brand: 'Reformation',
-    color: 'Champagne',
-    season: 'Summer',
-    wornCount: 6,
-    matchScore: 98,
-    isFavorite: true,
-    icon: Icons.checkroom_outlined,
-  ),
-  ClosetItem(
-    id: '2',
-    title: 'Emerald Pendant',
-    category: 'Jewelry',
-    brand: 'Mejuri',
-    color: 'Green',
-    season: 'All',
-    wornCount: 12,
-    matchScore: 98,
-    isFavorite: true,
-    icon: Icons.diamond_outlined,
-  ),
-  ClosetItem(
-    id: '3',
-    title: 'Velvet Blazer',
-    category: 'Garment',
-    brand: 'Zara',
-    color: 'Midnight Blue',
-    season: 'Winter',
-    wornCount: 4,
-    matchScore: 92,
-    isFavorite: false,
-    icon: Icons.checkroom_outlined,
-  ),
-  ClosetItem(
-    id: '4',
-    title: 'Diamond Stud Earrings',
-    category: 'Jewelry',
-    brand: 'Tiffany & Co.',
-    color: 'Silver',
-    season: 'All',
-    wornCount: 20,
-    matchScore: 95,
-    isFavorite: true,
-    icon: Icons.diamond_outlined,
-  ),
-  ClosetItem(
-    id: '5',
-    title: 'Cashmere Trench',
-    category: 'Garment',
-    brand: 'Max Mara',
-    color: 'Camel',
-    season: 'Autumn',
-    wornCount: 8,
-    matchScore: 91,
-    isFavorite: false,
-    icon: Icons.checkroom_outlined,
-  ),
-  ClosetItem(
-    id: '6',
-    title: 'Pearl Drop Necklace',
-    category: 'Jewelry',
-    brand: 'Mikimoto',
-    color: 'White',
-    season: 'All',
-    wornCount: 5,
-    matchScore: 89,
-    isFavorite: false,
-    icon: Icons.diamond_outlined,
-  ),
-  ClosetItem(
-    id: '7',
-    title: 'Linen Wide-Leg Trousers',
-    category: 'Garment',
-    brand: 'COS',
-    color: 'Ecru',
-    season: 'Summer',
-    wornCount: 9,
-    matchScore: 87,
-    isFavorite: false,
-    icon: Icons.checkroom_outlined,
-  ),
-  ClosetItem(
-    id: '8',
-    title: 'Gold Cuff Bracelet',
-    category: 'Jewelry',
-    brand: 'Monica Vinader',
-    color: 'Gold',
-    season: 'All',
-    wornCount: 15,
-    matchScore: 94,
-    isFavorite: true,
-    icon: Icons.diamond_outlined,
-  ),
-  ClosetItem(
-    id: '9',
-    title: 'Quilted Evening Bag',
-    category: 'Bag',
-    brand: 'Chanel',
-    color: 'Black',
-    season: 'All',
-    wornCount: 7,
-    matchScore: 96,
-    isFavorite: true,
-    icon: Icons.shopping_bag_outlined,
-  ),
-  ClosetItem(
-    id: '10',
-    title: 'Merino Turtleneck',
-    category: 'Garment',
-    brand: 'Uniqlo',
-    color: 'Ivory',
-    season: 'Winter',
-    wornCount: 14,
-    matchScore: 83,
-    isFavorite: false,
-    icon: Icons.checkroom_outlined,
-  ),
-  ClosetItem(
-    id: '11',
-    title: 'Tortoise Sunglasses',
-    category: 'Accessory',
-    brand: 'Celine',
-    color: 'Tortoise',
-    season: 'Summer',
-    wornCount: 18,
-    matchScore: 85,
-    isFavorite: false,
-    icon: Icons.wb_sunny_outlined,
-  ),
-  ClosetItem(
-    id: '12',
-    title: 'Sapphire Ring',
-    category: 'Jewelry',
-    brand: 'Catbird',
-    color: 'Blue',
-    season: 'All',
-    wornCount: 3,
-    matchScore: 90,
-    isFavorite: false,
-    icon: Icons.diamond_outlined,
-  ),
-  ClosetItem(
-    id: '13',
-    title: 'Satin Midi Skirt',
-    category: 'Garment',
-    brand: 'Rotate',
-    color: 'Blush',
-    season: 'Spring',
-    wornCount: 5,
-    matchScore: 88,
-    isFavorite: false,
-    icon: Icons.checkroom_outlined,
-  ),
-  ClosetItem(
-    id: '14',
-    title: 'Leather Tote',
-    category: 'Bag',
-    brand: 'A.P.C.',
-    color: 'Tan',
-    season: 'All',
-    wornCount: 22,
-    matchScore: 93,
-    isFavorite: true,
-    icon: Icons.shopping_bag_outlined,
-  ),
-  ClosetItem(
-    id: '15',
-    title: 'Crystal Hair Clip',
-    category: 'Accessory',
-    brand: 'Jennifer Behr',
-    color: 'Crystal',
-    season: 'All',
-    wornCount: 10,
-    matchScore: 82,
-    isFavorite: false,
-    icon: Icons.face_retouching_natural_outlined,
-  ),
-  ClosetItem(
-    id: '16',
-    title: 'Silk Scarf',
-    category: 'Accessory',
-    brand: 'Hermès',
-    color: 'Multi',
-    season: 'Spring',
-    wornCount: 6,
-    matchScore: 91,
-    isFavorite: true,
-    icon: Icons.wb_cloudy_outlined,
-  ),
-];
 
 // ─────────────────────────────────────────────
 //  MAIN DASHBOARD SHELL
@@ -439,6 +265,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
   List<ClosetItem> _closetItems = [];
   bool _isLoading = true;
+  bool _loadFailed = false;
+  bool _isAdmin = false;
 
   // Server-resolved display name (backend falls back to the email prefix
   // if the user hasn't synced a name yet). 'there' is only shown for the
@@ -449,48 +277,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _loadClosetItems();
-    _loadDashboard();
-  }
-
-  Future<void> _loadDashboard() async {
-    try {
-      final data = await ApiService.fetchDashboard();
-      if (!mounted) return;
-      setState(() {
-        _displayName = (data['username'] as String?) ?? _displayName;
-      });
-    } catch (e) {
-      // Backend not reachable, or /api/dashboard errored — keep the
-      // 'there' fallback, but log so this is actually debuggable.
-      debugPrint('fetchDashboard failed: $e');
-    }
+    AuthService.instance.fetchProfile().then((profile) {
+      if (mounted) {
+        setState(() {
+          _isAdmin = profile.isAdmin;
+          _displayName = profile.displayName ?? _displayName;
+        });
+      }
+    });
   }
 
   Future<void> _loadClosetItems() async {
+    setState(() {
+      _isLoading = true;
+      _loadFailed = false;
+    });
+
     try {
       final data = await ApiService.fetchClosetItems();
+      if (!mounted) return;
       setState(() {
         _closetItems = data.map(ClosetItem.fromJson).toList();
         _isLoading = false;
       });
     } catch (e) {
-      // Backend not reachable yet (e.g. server not running) — fall back to
-      // sample data so the UI is still usable during development.
+      // Showing invented items here would misrepresent the user's closet, so
+      // surface the failure and let them retry instead.
+      if (!mounted) return;
       setState(() {
-        _closetItems = List.from(_seedItems);
+        _closetItems = [];
+        _loadFailed = true;
         _isLoading = false;
       });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not reach the server — showing sample data.'),
-          ),
-        );
-      }
     }
   }
 
-  final List<Map<String, dynamic>> _navItems = [
+  List<Map<String, dynamic>> get _navItems => [
     {
       'title': 'Dashboard',
       'icon': Icons.dashboard_outlined,
@@ -512,6 +334,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       'selectedIcon': Icons.add_circle,
     },
     {
+      'title': 'Lookbooks',
+      'icon': Icons.collections_bookmark_outlined,
+      'selectedIcon': Icons.collections_bookmark,
+    },
+    {
       'title': 'Statistics',
       'icon': Icons.bar_chart_outlined,
       'selectedIcon': Icons.bar_chart,
@@ -521,25 +348,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       'icon': Icons.auto_awesome_outlined,
       'selectedIcon': Icons.auto_awesome,
       // Not a tab in `views` — this pushes PromptScreen instead of
-      // switching _selectedIndex. See _handleNavSelect below.
+      // switching _selectedIndex. See _handleNavTap below.
       'route': 'prompt',
     },
+    if (_isAdmin)
+      {
+        'title': 'Admin',
+        'icon': Icons.admin_panel_settings_outlined,
+        'selectedIcon': Icons.admin_panel_settings,
+      },
   ];
-
-  // Shared by both the desktop sidebar and the mobile drawer: nav items
-  // tagged with a 'route' push a dedicated full-screen page instead of
-  // swapping the embedded tab view.
-  void _handleNavSelect(int index) {
-    final route = _navItems[index]['route'] as String?;
-    if (route == 'prompt') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const PromptScreen()),
-      );
-      return;
-    }
-    setState(() => _selectedIndex = index);
-  }
 
   Future<void> _addItem(ClosetItem item) async {
     try {
@@ -563,6 +381,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
     }
   }
+
+  /// Handles a sidebar tap. Some entries push a dedicated route instead of
+  /// switching the inline view; matching by title (rather than a raw index)
+  /// keeps this correct even though the Admin entry only exists conditionally,
+  /// which would otherwise shift every index after it.
+  void _handleNavTap(Map<String, dynamic> item, int index) {
+    switch (item['title']) {
+      case 'My Closet':
+        Navigator.pushNamed(context, '/closet').then((_) {
+          if (mounted) _loadClosetItems();
+        });
+        break;
+      case 'Add New Item':
+        Navigator.pushNamed(context, '/upload').then((_) {
+          if (mounted) _loadClosetItems();
+        });
+        break;
+      case 'Lookbooks':
+        Navigator.pushNamed(context, '/lookbooks').then((_) {
+          if (mounted) _loadClosetItems();
+        });
+        break;
+      case 'Admin':
+        Navigator.pushNamed(context, '/admin');
+        break;
+      case 'Ask JewelVault':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PromptScreen()),
+        );
+        break;
+      case 'Statistics':
+        // Position in `views` below, not this item's raw index in
+        // `_navItems` — those diverge once route-only entries like
+        // Lookbooks/Ask JewelVault/Admin are interspersed before it.
+        setState(() => _selectedIndex = 4);
+        break;
+      default:
+        setState(() => _selectedIndex = index);
+    }
+  }
+
+
 
   Future<void> _toggleFavorite(String id) async {
     final idx = _closetItems.indexWhere((e) => e.id == id);
@@ -597,12 +458,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     }
 
+    if (_loadFailed) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.cloud_off_outlined, size: 48, color: AppColors.mutedText),
+                const SizedBox(height: 24),
+                Text(
+                  "Couldn't load your closet",
+                  style: AppTypography.headingSmall,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'We could not reach the server. Check your connection and try again.',
+                  style: AppTypography.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                OutlinedButton(
+                  onPressed: _loadClosetItems,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryEmerald,
+                    side: const BorderSide(color: AppColors.primaryEmerald),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  ),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final List<Widget> views = [
       _DashboardView(
         items: _closetItems,
         displayName: _displayName,
-        onNavigateToCloset: () => setState(() => _selectedIndex = 1),
-        onNavigateToAdd: () => setState(() => _selectedIndex = 3),
+        onNavigateToCloset: () => Navigator.pushNamed(context, '/closet'),
+        onNavigateToAdd: () => Navigator.pushNamed(context, '/upload'),
         onNavigateToStats: () => setState(() => _selectedIndex = 4),
       ),
       _ClosetView(items: _closetItems, onToggleFavorite: _toggleFavorite),
@@ -622,16 +522,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 displayName: _displayName,
                 onSelected: (i) {
                   Navigator.pop(context);
-                  final route = _navItems[i]['route'] as String?;
-                  if (route == 'prompt') {
-                    _handleNavSelect(i);
-                  } else if (i == 1) {
-                    Navigator.pushNamed(context, '/closet');
-                  } else if (i == 3) {
-                    Navigator.pushNamed(context, '/upload');
-                  } else {
-                    setState(() => _selectedIndex = i);
-                  }
+                  _handleNavTap(_navItems[i], i);
                 },
               ),
             )
@@ -658,7 +549,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   selectedIndex: _selectedIndex,
                   navItems: _navItems,
                   displayName: _displayName,
-                  onSelected: _handleNavSelect,
+                  onSelected: (i) => _handleNavTap(_navItems[i], i),
                 ),
               ),
             ),
@@ -738,117 +629,164 @@ class _SidebarContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: JewelVaultColors.surface,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _LogoRow(),
-          const SizedBox(height: 44),
-          Text(
-            'MENU',
-            style: JewelVaultTypography.labelSmall.copyWith(letterSpacing: 1.5),
-          ),
-          const SizedBox(height: 14),
-          Expanded(
-            child: ListView.separated(
-              itemCount: navItems.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 4),
-              itemBuilder: (context, index) {
-                final item = navItems[index];
-                final isSelected = selectedIndex == index;
-                return InkWell(
-                  onTap: () => onSelected(index),
-                  borderRadius: BorderRadius.circular(12),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 13,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? JewelVaultColors.primaryEmerald
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          isSelected ? item['selectedIcon'] : item['icon'],
-                          color: isSelected
-                              ? Colors.white
-                              : JewelVaultColors.secondaryText,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 14),
-                        Text(
-                          item['title'],
-                          style: JewelVaultTypography.labelLarge.copyWith(
-                            color: isSelected
-                                ? Colors.white
-                                : JewelVaultColors.primaryText,
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          Container(height: 1, color: JewelVaultColors.border),
-          const SizedBox(height: 16),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ProfileScreen()),
-            ),
-            leading: CircleAvatar(
-              radius: 18,
-              backgroundColor: JewelVaultColors.accentGoldLight,
-              child: Text(
-                displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U',
-                style: JewelVaultTypography.labelLarge.copyWith(
-                  color: JewelVaultColors.accentGold,
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.userChanges(),
+      builder: (context, snapshot) {
+        final user = snapshot.data;
+        // Prefer the name synced to our own backend - Firebase Auth's own
+        // displayName is only set if something calls updateProfile() on the
+        // Firebase user, which this app never does, so it's null even for
+        // accounts that gave a name at signup.
+        final resolvedName = displayName.isNotEmpty
+            ? displayName
+            : user?.displayName;
+        final greetingName =
+            resolvedName ?? user?.email?.split('@')[0] ?? 'User';
+
+        return Container(
+          color: AppColors.surface,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _LogoRow(),
+              const SizedBox(height: 44),
+              Text(
+                'MENU',
+                style: AppTypography.labelSmall.copyWith(
+                  letterSpacing: 1.5,
                 ),
               ),
-            ),
-            title: Text(
-              displayName,
-              style: JewelVaultTypography.labelLarge,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Text(
-              'Premium Member',
-              style: JewelVaultTypography.bodyMedium.copyWith(fontSize: 11),
-            ),
-            trailing: IconButton(
-              icon: const Icon(Icons.logout, color: Colors.redAccent, size: 18),
-              onPressed: () async {
-                try {
-                  await AuthService.instance.signOut();
-                  // No need to manually navigate.
-                  // AuthGate will detect the state change and show the LandingPage.
-                } catch (e) {
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Failed to sign out. Please try again.'),
+              const SizedBox(height: 14),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: navItems.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 4),
+
+                  itemBuilder: (context, index) {
+                    final item = navItems[index];
+                    final isSelected = selectedIndex == index;
+                    return InkWell(
+                      onTap: () => onSelected(index),
+                      borderRadius: BorderRadius.circular(12),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 13,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.primaryEmerald
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              isSelected ? item['selectedIcon'] : item['icon'],
+                              color: isSelected
+                                  ? Colors.white
+                                  : AppColors.secondaryText,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 14),
+                            Text(
+                              item['title'],
+                              style: AppTypography.labelLarge.copyWith(
+                                color: isSelected
+                                    ? Colors.white
+                                    : AppColors.primaryText,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Container(height: 1, color: AppColors.border),
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: () => Navigator.pushNamed(context, '/prompt'),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentGoldLight,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.auto_awesome, color: AppColors.accentGold, size: 20),
+                      const SizedBox(width: 14),
+                      Text(
+                        'Ask AI Stylist',
+                        style: AppTypography.labelLarge.copyWith(color: AppColors.accentGold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Material(
+                color: Colors.transparent,
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  onTap: () => Navigator.pushNamed(context, '/profile'),
+                  leading: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: AppColors.accentGoldLight,
+                    child: Text(
+                      greetingName.isNotEmpty ? greetingName[0].toUpperCase() : 'U',
+                      style: AppTypography.labelLarge.copyWith(
+                        color: AppColors.accentGold,
+                      ),
                     ),
-                  );
-                }
-              },
-            ),
+                  ),
+                  title: Text(
+                    greetingName,
+                    style: AppTypography.labelLarge,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Text(
+                    'Premium Member',
+                    style: AppTypography.bodyMedium.copyWith(fontSize: 11),
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(
+                      Icons.logout,
+                      color: Colors.redAccent,
+                      size: 18,
+                    ),
+                    onPressed: () async {
+                      try {
+                        await AuthService.instance.signOut();
+                        // No need to manually navigate.
+                        // AuthGate will detect the state change and show the LandingPage.
+                      } catch (e) {
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Failed to sign out. Please try again.',
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ),
+              ),
+
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -917,7 +855,12 @@ class _DashboardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final firstName = displayName.split(' ')[0];
+    final user = FirebaseAuth.instance.currentUser;
+    // Prefer the name synced to our own backend over Firebase Auth's own
+    // displayName, which this app never sets via updateProfile().
+    final resolvedName = displayName.isNotEmpty ? displayName : user?.displayName;
+    final greetingName = resolvedName ?? user?.email?.split('@')[0] ?? 'there';
+    final firstName = greetingName.split(' ')[0];
     final greeting = _greetingForTime(DateTime.now());
 
     final garmentCount = items.where((e) => e.category == 'Garment').length;
@@ -981,8 +924,8 @@ class _DashboardView extends StatelessWidget {
           // ── STAT CARDS ──────────────────────────────────────
           LayoutBuilder(
             builder: (ctx, constraints) {
-              final w = (constraints.maxWidth - 48) / 4;
               final isNarrow = constraints.maxWidth < 700;
+
               return isNarrow
                   ? Column(
                       children: [
@@ -1263,7 +1206,7 @@ class _AISuggestionCard extends StatelessWidget {
         if (pairA != null && pairB != null) ...[
           Row(
             children: [
-              _PairChip(item: pairA!),
+              Expanded(child: _PairChip(item: pairA!)),
               const SizedBox(width: 10),
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -1280,7 +1223,7 @@ class _AISuggestionCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              _PairChip(item: pairB!),
+              Expanded(child: _PairChip(item: pairB!)),
             ],
           ),
           const SizedBox(height: 20),
@@ -1334,11 +1277,15 @@ class _PairChip extends StatelessWidget {
       children: [
         Icon(item.icon, color: Colors.white, size: 16),
         const SizedBox(width: 8),
-        Text(
-          item.title,
-          style: AppTypography.labelLarge.copyWith(
-            color: Colors.white,
-            fontSize: 12,
+        Flexible(
+          child: Text(
+            item.title,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            style: AppTypography.labelLarge.copyWith(
+              color: Colors.white,
+              fontSize: 12,
+            ),
           ),
         ),
       ],

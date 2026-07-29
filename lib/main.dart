@@ -11,6 +11,8 @@ import 'landing_page.dart';
 import 'screens/profile_screen.dart';
 import 'screens/prompt_screen.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/app_colors.dart';
+
 import 'presentation/closet/providers/closet_provider.dart';
 import 'presentation/closet/screens/closet_screen.dart';
 import 'presentation/closet/upload/upload_screen.dart';
@@ -18,6 +20,9 @@ import 'presentation/closet/screens/processing_screen.dart';
 import 'presentation/closet/screens/item_details_screen.dart';
 import 'presentation/closet/screens/metadata_review_screen.dart';
 import 'presentation/closet/screens/recommendations_screen.dart';
+import 'presentation/admin/screens/admin_screen.dart';
+import 'presentation/lookbooks/screens/lookbooks_screen.dart';
+import 'services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,33 +60,44 @@ class MyApp extends StatelessWidget {
         '/landing': (context) => const LandingPage(),
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
-        '/dashboard': (context) => const DashboardScreen(),
-        '/profile': (context) => const ProfileScreen(),
-        '/prompt': (context) => const PromptScreen(),
-        '/closet': (context) => const ClosetScreen(),
-        '/upload': (context) => const UploadScreen(),
+        '/dashboard': (context) => const _RequireAuth(child: DashboardScreen()),
+        '/profile': (context) => const _RequireAuth(child: ProfileScreen()),
+        '/prompt': (context) => const _RequireAuth(child: PromptScreen()),
+        '/closet': (context) => const _RequireAuth(child: ClosetScreen()),
+        '/upload': (context) => const _RequireAuth(child: UploadScreen()),
+        '/lookbooks': (context) => const _RequireAuth(child: LookbooksScreen()),
+        '/admin': (context) => const _RequireAuth(child: _RequireAdmin(child: AdminScreen())),
       },
 
+
       onGenerateRoute: (settings) {
+        // These routes carry required arguments, so a direct URL visit without
+        // them must fall back to the auth gate rather than crashing on a cast.
         if (settings.name == '/processing') {
-          final args = settings.arguments as Map<String, dynamic>;
+          final args = settings.arguments;
+          if (args is! Map<String, dynamic>) return _fallbackRoute();
           return MaterialPageRoute(
-            builder: (context) => ProcessingScreen(jobId: args['jobId'], itemId: args['itemId']),
+            builder: (context) => _RequireAuth(
+              child: ProcessingScreen(jobId: args['jobId'], itemId: args['itemId']),
+            ),
           );
         } else if (settings.name == '/item-details') {
-          final itemId = settings.arguments as int;
+          final itemId = settings.arguments;
+          if (itemId is! int) return _fallbackRoute();
           return MaterialPageRoute(
-            builder: (context) => ItemDetailsScreen(itemId: itemId),
+            builder: (context) => _RequireAuth(child: ItemDetailsScreen(itemId: itemId)),
           );
         } else if (settings.name == '/metadata-review') {
-          final itemId = settings.arguments as int;
+          final itemId = settings.arguments;
+          if (itemId is! int) return _fallbackRoute();
           return MaterialPageRoute(
-            builder: (context) => MetadataReviewScreen(itemId: itemId),
+            builder: (context) => _RequireAuth(child: MetadataReviewScreen(itemId: itemId)),
           );
         } else if (settings.name == '/recommendations') {
-          final itemId = settings.arguments as int;
+          final itemId = settings.arguments;
+          if (itemId is! int) return _fallbackRoute();
           return MaterialPageRoute(
-            builder: (context) => RecommendationsScreen(itemId: itemId),
+            builder: (context) => _RequireAuth(child: RecommendationsScreen(itemId: itemId)),
           );
         }
         return null;
@@ -116,6 +132,107 @@ class _AuthGate extends StatelessWidget {
         }
 
         return const LandingPage();
+      },
+    );
+  }
+}
+
+/// Route used when a screen is opened without the arguments it requires
+/// (typically a direct URL visit on the web build).
+MaterialPageRoute _fallbackRoute() =>
+    MaterialPageRoute(builder: (context) => const _AuthGate());
+
+/// Wraps a route that requires an authenticated user.
+///
+/// Navigating straight to a protected URL (for example by typing /closet in the
+/// browser) must not expose the screen, so an unauthenticated visitor is shown
+/// the login screen instead.
+class _RequireAuth extends StatelessWidget {
+  final Widget child;
+
+  const _RequireAuth({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: AppColors.background,
+            body: Center(
+              child: CircularProgressIndicator(color: AppColors.primaryEmerald),
+            ),
+          );
+        }
+
+        if (snapshot.hasData && snapshot.data != null) {
+          return child;
+        }
+
+        return const LoginScreen();
+      },
+    );
+  }
+}
+
+/// Wraps a route that requires the signed-in user to have the admin role.
+///
+/// Must sit inside a _RequireAuth so a real user is already signed in;
+/// the role check itself always hits the backend rather than trusting any
+/// client-cached value, since a role can change mid-session.
+class _RequireAdmin extends StatelessWidget {
+  final Widget child;
+
+  const _RequireAdmin({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: AuthService.instance.checkIsAdmin(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: AppColors.background,
+            body: Center(
+              child: CircularProgressIndicator(color: AppColors.primaryEmerald),
+            ),
+          );
+        }
+
+        if (snapshot.data == true) {
+          return child;
+        }
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.lock_outline, size: 48, color: AppColors.mutedText),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "You don't have access to this page.",
+                    style: TextStyle(color: AppColors.primaryText, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  OutlinedButton(
+                    onPressed: () => Navigator.pushReplacementNamed(context, '/dashboard'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primaryEmerald,
+                      side: const BorderSide(color: AppColors.primaryEmerald),
+                    ),
+                    child: const Text('Back to Dashboard'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
       },
     );
   }
