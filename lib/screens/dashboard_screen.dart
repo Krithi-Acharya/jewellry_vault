@@ -274,19 +274,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String _displayName = 'there';
 
   @override
-  void initState() {
-    super.initState();
-    _loadClosetItems();
-    AuthService.instance.fetchProfile().then((profile) {
-      if (mounted) {
-        setState(() {
-          _isAdmin = profile.isAdmin;
-          _displayName = profile.displayName ?? _displayName;
-        });
+void initState() {
+  super.initState();
+  _loadClosetItems();
+  AuthService.instance.fetchProfile().then((profile) {
+    if (mounted) {
+      setState(() {
+        _isAdmin = profile.isAdmin;
+        if (profile.displayName != null) _displayName = profile.displayName!;
+      });
+    }
+  });
+  // fetchProfile()'s /api/auth/me route doesn't exist on this backend, so
+  // it never returns a real name. /api/dashboard does exist and already
+  // returns a server-resolved username, so use that as the actual source
+  // of the greeting name.
+  ApiService.fetchDashboard().then((data) {
+    if (mounted) {
+      final username = data['username'] as String?;
+      if (username != null && username.isNotEmpty) {
+        setState(() => _displayName = username);
       }
-    });
-  }
-
+    }
+  }).catchError((_) {
+    // Ignore — greeting just falls back to the email prefix.
+  });
+}
   Future<void> _loadClosetItems() async {
     setState(() {
       _isLoading = true;
@@ -445,6 +458,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  // ── FIX: Profile changes (photo removal, name edits) weren't showing up
+  // back on the dashboard. The sidebar's avatar used a StreamBuilder on
+  // FirebaseAuth.instance.userChanges(), which was assumed to fire after
+  // ProfileScreen called updatePhotoURL()/updateDisplayName() + reload().
+  // In practice that stream doesn't reliably re-emit on every platform, so
+  // the sidebar (and the dashboard greeting, which reads
+  // FirebaseAuth.instance.currentUser directly) kept showing stale data.
+  //
+  // Fix: navigate to Profile with an *awaited* push. When we come back,
+  // explicitly reload the current user and call setState so both the
+  // sidebar avatar and the dashboard greeting re-read fresh data instead
+  // of depending solely on the stream.
+  Future<void> _openProfile() async {
+    await Navigator.pushNamed(context, '/profile');
+    await FirebaseAuth.instance.currentUser?.reload();
+    if (mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isDesktop = MediaQuery.of(context).size.width > 900;
@@ -524,6 +555,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Navigator.pop(context);
                   _handleNavTap(_navItems[i], i);
                 },
+                onProfileTap: () {
+                  Navigator.pop(context); // close the drawer first
+                  _openProfile();
+                },
               ),
             )
           : null,
@@ -546,10 +581,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   border: Border(right: BorderSide(color: AppColors.border)),
                 ),
                 child: _SidebarContent(
-                  selectedIndex: _selectedIndex,
-                  navItems: _navItems,
-                  displayName: _displayName,
-                  onSelected: (i) => _handleNavTap(_navItems[i], i),
+                    selectedIndex: _selectedIndex,
+                    navItems: _navItems,
+                    displayName: _displayName,
+                  onSelected: (i) {
+                    if (i == 1) {
+                      Navigator.pushNamed(context, '/closet');
+                    } else if (i == 3) {
+                      Navigator.pushNamed(context, '/upload');
+                    } else {
+                      setState(() => _selectedIndex = i);
+                    }
+                  },
+                  onProfileTap: _openProfile,
                 ),
               ),
             ),
@@ -619,12 +663,14 @@ class _SidebarContent extends StatelessWidget {
   final List<Map<String, dynamic>> navItems;
   final String displayName;
   final Function(int) onSelected;
+  final VoidCallback onProfileTap;
 
   const _SidebarContent({
     required this.selectedIndex,
     required this.navItems,
     required this.displayName,
     required this.onSelected,
+    required this.onProfileTap,
   });
 
   @override
@@ -711,6 +757,8 @@ class _SidebarContent extends StatelessWidget {
               ),
               Container(height: 1, color: AppColors.border),
               const SizedBox(height: 16),
+
+              // "Ask AI Stylist" entry point.
               GestureDetector(
                 onTap: () => Navigator.pushNamed(context, '/prompt'),
                 child: Container(
@@ -737,16 +785,19 @@ class _SidebarContent extends StatelessWidget {
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
                   onTap: () => Navigator.pushNamed(context, '/profile'),
-                  leading: CircleAvatar(
-                    radius: 18,
-                    backgroundColor: AppColors.accentGoldLight,
-                    child: Text(
-                      greetingName.isNotEmpty ? greetingName[0].toUpperCase() : 'U',
-                      style: AppTypography.labelLarge.copyWith(
-                        color: AppColors.accentGold,
-                      ),
+                    leading: CircleAvatar(
+                      radius: 18,
+                      backgroundColor: AppColors.accentGoldLight,
+                      backgroundImage: user?.photoURL != null ? NetworkImage(user!.photoURL!) : null,
+                      child: user?.photoURL == null
+                          ? Text(
+                              greetingName.isNotEmpty ? greetingName[0].toUpperCase() : 'U',
+                              style: AppTypography.labelLarge.copyWith(
+                                color: AppColors.accentGold,
+                              ),
+                            )
+                          : null,
                     ),
-                  ),
                   title: Text(
                     greetingName,
                     style: AppTypography.labelLarge,
