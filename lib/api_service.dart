@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'core/config/app_config.dart';
@@ -11,6 +12,32 @@ class ApiService {
   // backend every other screen (Closet, Item Details, Upload) already
   // talks to.
   static String get baseUrl => AppConfig.apiBaseUrl;
+
+  // http.MultipartFile.fromBytes defaults to application/octet-stream when
+  // no contentType is given — the backend's multer fileFilter only accepts
+  // image/jpeg, image/png, and image/webp, so an unset contentType makes the
+  // upload silently fail every time. Prefer the XFile's own mimeType (set
+  // explicitly by XFile.fromData callers) and fall back to guessing from the
+  // filename extension for picker-sourced files that carry a real one.
+  static MediaType _mediaTypeFor(XFile image, String fallbackFilename) {
+    final mime = image.mimeType;
+    if (mime != null && mime.contains('/')) {
+      final parts = mime.split('/');
+      return MediaType(parts[0], parts[1]);
+    }
+    final name = image.name.isNotEmpty ? image.name : fallbackFilename;
+    final ext = name.contains('.') ? name.split('.').last.toLowerCase() : '';
+    switch (ext) {
+      case 'png':
+        return MediaType('image', 'png');
+      case 'webp':
+        return MediaType('image', 'webp');
+      case 'jpg':
+      case 'jpeg':
+      default:
+        return MediaType('image', 'jpeg');
+    }
+  }
 
   static Future<Map<String, String>> _authHeaders() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -158,6 +185,7 @@ class ApiService {
         'image',
         bytes,
         filename: image.name.isNotEmpty ? image.name : 'item.jpg',
+        contentType: _mediaTypeFor(image, 'item.jpg'),
       ),
     );
 
@@ -240,6 +268,7 @@ class ApiService {
         'image',
         bytes,
         filename: image.name.isNotEmpty ? image.name : 'outfit.jpg',
+        contentType: _mediaTypeFor(image, 'outfit.jpg'),
       ),
     );
 
