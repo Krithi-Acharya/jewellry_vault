@@ -23,7 +23,6 @@ String? _resolveImageUrl(String? rawUrl) {
   return rawUrl;
 }
 
-
 // Compatibility aliases: this screen was originally written against a
 // local JewelVaultColors/JewelVaultTypography design system that has since
 // been superseded by the shared AppColors/AppTypography classes in
@@ -261,7 +260,6 @@ Widget _itemImage(ClosetItem item, {double iconSize = 36}) {
   );
 }
 
-
 // ─────────────────────────────────────────────
 //  MAIN DASHBOARD SHELL
 // ─────────────────────────────────────────────
@@ -283,34 +281,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String _displayName = 'Annika';
 
   @override
-void initState() {
-  super.initState();
-  _loadClosetItems();
-  AuthService.instance.fetchProfile().then((profile) {
-    if (mounted) {
-      setState(() {
-        _isAdmin = profile.isAdmin;
-        if (profile.displayName != null &&
-            profile.displayName!.isNotEmpty &&
-            profile.displayName!.toLowerCase() != 'there') {
-          _displayName = profile.displayName!;
-        }
-      });
-    }
-  });
-  ApiService.fetchDashboard().then((data) {
-    if (mounted) {
-      final username = data['username'] as String?;
-      if (username != null &&
-          username.isNotEmpty &&
-          username.toLowerCase() != 'there') {
-        setState(() => _displayName = username);
+  void initState() {
+    super.initState();
+    _loadClosetItems();
+    AuthService.instance.fetchProfile().then((profile) {
+      if (mounted) {
+        setState(() {
+          _isAdmin = profile.isAdmin;
+          if (profile.displayName != null &&
+              profile.displayName!.isNotEmpty &&
+              profile.displayName!.toLowerCase() != 'there') {
+            _displayName = profile.displayName!;
+          }
+        });
       }
-    }
-  }).catchError((_) {
-    // Ignore
-  });
-}
+    });
+    ApiService.fetchDashboard()
+        .then((data) {
+          if (mounted) {
+            final username = data['username'] as String?;
+            if (username != null &&
+                username.isNotEmpty &&
+                username.toLowerCase() != 'there') {
+              setState(() => _displayName = username);
+            }
+          }
+        })
+        .catchError((_) {
+          // Ignore
+        });
+  }
+
   Future<void> _loadClosetItems() async {
     setState(() {
       _isLoading = true;
@@ -440,8 +441,6 @@ void initState() {
     }
   }
 
-
-
   Future<void> _toggleFavorite(String id) async {
     final idx = _closetItems.indexWhere((e) => e.id == id);
     if (idx == -1) return;
@@ -502,7 +501,11 @@ void initState() {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.cloud_off_outlined, size: 48, color: AppColors.mutedText),
+                const Icon(
+                  Icons.cloud_off_outlined,
+                  size: 48,
+                  color: AppColors.mutedText,
+                ),
                 const SizedBox(height: 24),
                 Text(
                   "Couldn't load your closet",
@@ -521,7 +524,10 @@ void initState() {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primaryEmerald,
                     side: const BorderSide(color: AppColors.primaryEmerald),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 14,
+                    ),
                   ),
                   child: const Text('Retry'),
                 ),
@@ -585,9 +591,9 @@ void initState() {
                   border: Border(right: BorderSide(color: AppColors.border)),
                 ),
                 child: _SidebarContent(
-                    selectedIndex: _selectedIndex,
-                    navItems: _navItems,
-                    displayName: _displayName,
+                  selectedIndex: _selectedIndex,
+                  navItems: _navItems,
+                  displayName: _displayName,
                   onSelected: (i) {
                     _handleNavTap(_navItems[i], i);
                   },
@@ -599,7 +605,8 @@ void initState() {
             child: SafeArea(
               child: Builder(
                 builder: (context) {
-                  final safeIndex = (_selectedIndex >= 0 && _selectedIndex < views.length)
+                  final safeIndex =
+                      (_selectedIndex >= 0 && _selectedIndex < views.length)
                       ? _selectedIndex
                       : 0;
                   return AnimatedSwitcher(
@@ -684,19 +691,21 @@ class _SidebarContent extends StatelessWidget {
       stream: FirebaseAuth.instance.userChanges(),
       builder: (context, snapshot) {
         final user = snapshot.data;
-        final resolvedName = (displayName.isNotEmpty && displayName.toLowerCase() != 'there')
+        final resolvedName =
+            (displayName.isNotEmpty && displayName.toLowerCase() != 'there')
             ? displayName
             : user?.displayName;
-        final String greetingName = (resolvedName != null &&
+        final String greetingName =
+            (resolvedName != null &&
                 resolvedName.isNotEmpty &&
                 resolvedName.toLowerCase() != 'there')
             ? resolvedName
             : (user?.email != null &&
-                    user!.email!.contains('@') &&
-                    user.email!.split('@')[0].isNotEmpty
-                ? (user.email!.split('@')[0][0].toUpperCase() +
-                    user.email!.split('@')[0].substring(1))
-                : 'Annika');
+                      user!.email!.contains('@') &&
+                      user.email!.split('@')[0].isNotEmpty
+                  ? (user.email!.split('@')[0][0].toUpperCase() +
+                        user.email!.split('@')[0].substring(1))
+                  : 'Annika');
 
         return Container(
           color: AppColors.surface,
@@ -708,9 +717,7 @@ class _SidebarContent extends StatelessWidget {
               const SizedBox(height: 16),
               Text(
                 'MENU',
-                style: AppTypography.labelSmall.copyWith(
-                  letterSpacing: 1.5,
-                ),
+                style: AppTypography.labelSmall.copyWith(letterSpacing: 1.5),
               ),
               const SizedBox(height: 8),
               Expanded(
@@ -777,18 +784,28 @@ class _SidebarContent extends StatelessWidget {
                 onTap: () => Navigator.pushNamed(context, '/prompt'),
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.accentGoldLight,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.auto_awesome, color: AppColors.accentGold, size: 18),
+                      const Icon(
+                        Icons.auto_awesome,
+                        color: AppColors.accentGold,
+                        size: 18,
+                      ),
                       const SizedBox(width: 10),
                       Text(
                         'Ask AI Stylist',
-                        style: AppTypography.labelLarge.copyWith(fontSize: 13, color: AppColors.accentGold),
+                        style: AppTypography.labelLarge.copyWith(
+                          fontSize: 13,
+                          color: AppColors.accentGold,
+                        ),
                       ),
                     ],
                   ),
@@ -799,19 +816,23 @@ class _SidebarContent extends StatelessWidget {
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
                   onTap: () => Navigator.pushNamed(context, '/profile'),
-                    leading: CircleAvatar(
-                      radius: 18,
-                      backgroundColor: AppColors.accentGoldLight,
-                      backgroundImage: user?.photoURL != null ? NetworkImage(user!.photoURL!) : null,
-                      child: user?.photoURL == null
-                          ? Text(
-                              greetingName.isNotEmpty ? greetingName[0].toUpperCase() : 'U',
-                              style: AppTypography.labelLarge.copyWith(
-                                color: AppColors.accentGold,
-                              ),
-                            )
-                          : null,
-                    ),
+                  leading: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: AppColors.accentGoldLight,
+                    backgroundImage: user?.photoURL != null
+                        ? NetworkImage(user!.photoURL!)
+                        : null,
+                    child: user?.photoURL == null
+                        ? Text(
+                            greetingName.isNotEmpty
+                                ? greetingName[0].toUpperCase()
+                                : 'U',
+                            style: AppTypography.labelLarge.copyWith(
+                              color: AppColors.accentGold,
+                            ),
+                          )
+                        : null,
+                  ),
                   title: Text(
                     greetingName,
                     style: AppTypography.labelLarge,
@@ -847,7 +868,6 @@ class _SidebarContent extends StatelessWidget {
                   ),
                 ),
               ),
-
             ],
           ),
         );
@@ -921,19 +941,21 @@ class _DashboardView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    final resolvedName = (displayName.isNotEmpty && displayName.toLowerCase() != 'there')
+    final resolvedName =
+        (displayName.isNotEmpty && displayName.toLowerCase() != 'there')
         ? displayName
         : user?.displayName;
-    final String greetingName = (resolvedName != null &&
+    final String greetingName =
+        (resolvedName != null &&
             resolvedName.isNotEmpty &&
             resolvedName.toLowerCase() != 'there')
         ? resolvedName
         : (user?.email != null &&
-                user!.email!.contains('@') &&
-                user.email!.split('@')[0].isNotEmpty
-            ? (user.email!.split('@')[0][0].toUpperCase() +
-                user.email!.split('@')[0].substring(1))
-            : 'Annika');
+                  user!.email!.contains('@') &&
+                  user.email!.split('@')[0].isNotEmpty
+              ? (user.email!.split('@')[0][0].toUpperCase() +
+                    user.email!.split('@')[0].substring(1))
+              : 'Annika');
     final firstName = greetingName.split(' ')[0];
     final greeting = _greetingForTime(DateTime.now());
 
@@ -3257,10 +3279,14 @@ class _ItemDetailCard extends StatelessWidget {
                                             .copyWith(fontSize: 12),
                                       ),
                                       const SizedBox(width: 6),
-                                      Text(
-                                        item.category,
-                                        style: JewelVaultTypography.labelLarge
-                                            .copyWith(fontSize: 12),
+                                      Flexible(
+                                        child: Text(
+                                          item.category,
+                                          style: JewelVaultTypography.labelLarge
+                                              .copyWith(fontSize: 12),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
+                                        ),
                                       ),
                                       const SizedBox(width: 4),
                                       const Icon(

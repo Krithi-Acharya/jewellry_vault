@@ -10,6 +10,7 @@ export const createItemSchema = z.object({
 
 export const updateItemSchema = z.object({
   categoryId: z.number().optional(),
+  categoryName: z.string().optional(),
   status: z.string().optional(),
   manualAttributes: z.record(z.any()).optional(),
   manualColors: z.array(z.any()).optional(),

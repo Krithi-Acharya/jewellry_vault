@@ -6,34 +6,76 @@ from config import Config
 
 class Database:
     def __init__(self):
-        self.conn = psycopg2.connect(Config.DATABASE_URL)
-        self.conn.autocommit = True
+        self.conn = None
+        self._connect()
+
+    def _connect(self):
+        try:
+            self.conn = psycopg2.connect(Config.DATABASE_URL)
+            self.conn.autocommit = True
+        except Exception as e:
+            self.conn = None
+            raise e
+
+    def _ensure_connection(self):
+        if self.conn is None or self.conn.closed != 0:
+            self._connect()
 
     def get_pending_job(self):
-        with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("""
-                SELECT * FROM item_upload_jobs 
-                WHERE iuj_status = 'PENDING' 
-                ORDER BY iuj_created_at ASC 
-                LIMIT 1
-                FOR UPDATE SKIP LOCKED
-            """)
-            return cur.fetchone()
+        self._ensure_connection()
+        try:
+            with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT * FROM item_upload_jobs 
+                    WHERE iuj_status = 'PENDING' 
+                    ORDER BY iuj_created_at ASC 
+                    LIMIT 1
+                    FOR UPDATE SKIP LOCKED
+                """)
+                return cur.fetchone()
+        except (psycopg2.OperationalError, psycopg2.InterfaceError):
+            self._connect()
+            with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT * FROM item_upload_jobs 
+                    WHERE iuj_status = 'PENDING' 
+                    ORDER BY iuj_created_at ASC 
+                    LIMIT 1
+                    FOR UPDATE SKIP LOCKED
+                """)
+                return cur.fetchone()
 
     def update_job_status(self, job_id, status, error=None, increment_retry=False):
-        with self.conn.cursor() as cur:
-            retry_sql = "iuj_retry_count = iuj_retry_count + 1," if increment_retry else ""
-            error_val = error if error else None
-            processed_sql = "iuj_processed_at = NOW()," if status in ('COMPLETED', 'FAILED') else ""
-            
-            cur.execute(f"""
-                UPDATE item_upload_jobs 
-                SET iuj_status = %s,
-                    {retry_sql}
-                    {processed_sql}
-                    iuj_last_error = %s
-                WHERE iuj_id = %s
-            """, (status, error_val, job_id))
+        self._ensure_connection()
+        try:
+            with self.conn.cursor() as cur:
+                retry_sql = "iuj_retry_count = iuj_retry_count + 1," if increment_retry else ""
+                error_val = error if error else None
+                processed_sql = "iuj_processed_at = NOW()," if status in ('COMPLETED', 'FAILED') else ""
+                
+                cur.execute(f"""
+                    UPDATE item_upload_jobs 
+                    SET iuj_status = %s,
+                        {retry_sql}
+                        {processed_sql}
+                        iuj_last_error = %s
+                    WHERE iuj_id = %s
+                """, (status, error_val, job_id))
+        except (psycopg2.OperationalError, psycopg2.InterfaceError):
+            self._connect()
+            with self.conn.cursor() as cur:
+                retry_sql = "iuj_retry_count = iuj_retry_count + 1," if increment_retry else ""
+                error_val = error if error else None
+                processed_sql = "iuj_processed_at = NOW()," if status in ('COMPLETED', 'FAILED') else ""
+                
+                cur.execute(f"""
+                    UPDATE item_upload_jobs 
+                    SET iuj_status = %s,
+                        {retry_sql}
+                        {processed_sql}
+                        iuj_last_error = %s
+                    WHERE iuj_id = %s
+                """, (status, error_val, job_id))
 
     def save_raw_ai_response(self, ci_id, provider, model, prompt_version, raw_response):
         with self.conn.cursor() as cur:

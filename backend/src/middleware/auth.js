@@ -35,8 +35,14 @@ export const verifyFirebaseToken = async (req, res, next) => {
       });
     } else {
       decodedToken = await getAuth().verifyIdToken(token);
-      dbUser = await prisma.users.findUnique({
-        where: { usr_firebase_uid: decodedToken.uid }
+      dbUser = await prisma.users.upsert({
+        where: { usr_firebase_uid: decodedToken.uid },
+        update: {},
+        create: {
+          usr_firebase_uid: decodedToken.uid,
+          usr_email: decodedToken.email || `${decodedToken.uid}@user.com`,
+          usr_display_name: decodedToken.name || (decodedToken.email ? decodedToken.email.split('@')[0] : 'User'),
+        }
       });
     }
     

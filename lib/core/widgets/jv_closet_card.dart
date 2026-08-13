@@ -58,7 +58,6 @@ class _JVClosetCardState extends State<JVClosetCard> {
         statusIcon = Icons.hourglass_empty;
     }
 
-
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
@@ -87,22 +86,36 @@ class _JVClosetCardState extends State<JVClosetCard> {
                         fit: BoxFit.cover,
                         placeholder: (context, url) => const AspectRatio(
                           aspectRatio: 3 / 4,
-                          child: JVSkeleton(width: double.infinity, height: double.infinity),
+                          child: JVSkeleton(
+                            width: double.infinity,
+                            height: double.infinity,
+                          ),
                         ),
                         errorWidget: (context, url, error) => const AspectRatio(
                           aspectRatio: 3 / 4,
-                          child: JVImagePlaceholder(message: 'Image unavailable', showAction: false),
+                          child: JVImagePlaceholder(
+                            message: 'Image unavailable',
+                            showAction: false,
+                          ),
                         ),
                       )
                     : const AspectRatio(
                         aspectRatio: 3 / 4,
-                        child: JVImagePlaceholder(message: 'Image unavailable', showAction: false),
+                        child: JVImagePlaceholder(
+                          message: 'Image unavailable',
+                          showAction: false,
+                        ),
                       ),
               ),
-              
+
               // Metadata Section
               Padding(
-                padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.sm, left: AppSpacing.xs, right: AppSpacing.xs),
+                padding: const EdgeInsets.only(
+                  top: AppSpacing.sm,
+                  bottom: AppSpacing.sm,
+                  left: AppSpacing.xs,
+                  right: AppSpacing.xs,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -124,10 +137,16 @@ class _JVClosetCardState extends State<JVClosetCard> {
                       children: [
                         Icon(statusIcon, size: 12, color: statusColor),
                         const SizedBox(width: AppSpacing.xs),
-                        Text(
-                          widget.status == 'Verified' ? 'AI Verified' : widget.status,
-                          style: AppTypography.labelSmall.copyWith(
-                            color: statusColor,
+                        Flexible(
+                          child: Text(
+                            widget.status == 'Verified'
+                                ? 'AI Verified'
+                                : widget.status,
+                            style: AppTypography.labelSmall.copyWith(
+                              color: statusColor,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
                         ),
                       ],
