@@ -16,8 +16,15 @@ class ClosetProvider extends ChangeNotifier {
   String? _selectedCategory; // 'All', 'Clothing', 'Jewelry', 'Archived'
 
   Future<void> fetchItems() async {
-    _isLoading = true;
-    notifyListeners();
+    // Only drop to the loading-skeleton state on the very first load.
+    // Re-fetching while items are already on screen (e.g. returning from
+    // item details) must not tear down and recreate the already-rendered
+    // image widgets - doing so right on top of a navigation transition is
+    // what was causing CanvasKit to leave images rendered as solid black.
+    if (_items.isEmpty) {
+      _isLoading = true;
+      notifyListeners();
+    }
 
     try {
       final token = await AuthService.instance.getIdToken();
