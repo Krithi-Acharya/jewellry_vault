@@ -41,6 +41,15 @@ class UploadProvider extends ChangeNotifier {
     }
   }
 
+  void setPickedBytes(Uint8List bytes, {String name = 'camera-capture.png'}) {
+    _error = null;
+    final sizeMB = (bytes.length / (1024 * 1024)).toStringAsFixed(1);
+    _imageBytes = bytes;
+    _imageName = name;
+    _imageSize = '$sizeMB MB';
+    notifyListeners();
+  }
+
   void clearImage() {
     _imageBytes = null;
     _imageName = null;

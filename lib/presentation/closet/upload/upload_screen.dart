@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -9,6 +10,7 @@ import '../../../core/widgets/jv_button.dart';
 import '../../../core/widgets/jv_card.dart';
 import 'upload_provider.dart';
 import 'upload_preview_screen.dart';
+import 'camera_capture.dart';
 
 class UploadScreen extends StatelessWidget {
   const UploadScreen({super.key});
@@ -27,8 +29,19 @@ class _UploadScreenContent extends StatelessWidget {
 
   void _handleImagePick(BuildContext context, ImageSource source) async {
     final provider = context.read<UploadProvider>();
-    await provider.pickImage(source);
-    
+
+    // Desktop browsers ignore image_picker's camera "capture" hint and just
+    // open a file browser instead of a live camera — route to an actual
+    // in-browser getUserMedia capture flow on web instead.
+    if (source == ImageSource.camera && kIsWeb) {
+      final bytes = await showWebCameraCapture(context);
+      if (bytes != null) {
+        provider.setPickedBytes(bytes);
+      }
+    } else {
+      await provider.pickImage(source);
+    }
+
     if (provider.hasImage && context.mounted) {
       Navigator.push(
         context,
