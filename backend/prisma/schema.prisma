@@ -53,6 +53,8 @@ model closet_items {
   ci_deleted_at                      DateTime?                            @db.Timestamp(6)
   ci_is_deleted                      Boolean?                             @default(false)
   ci_is_favorite                     Boolean?                             @default(false)
+  ci_wear_count                      Int                                  @default(0)
+  ci_last_worn_at                    DateTime?                            @db.Timestamp(6)
   closet_item_ai_tags                closet_item_ai_tags?
   closet_item_attributes             closet_item_attributes?
   closet_item_images                 closet_item_images[]

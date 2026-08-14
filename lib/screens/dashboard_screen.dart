@@ -89,14 +89,14 @@ class ClosetItem {
     this.imageUrl,
   });
 
-  ClosetItem copyWith({bool? isFavorite}) => ClosetItem(
+  ClosetItem copyWith({bool? isFavorite, int? wornCount}) => ClosetItem(
     id: id,
     title: title,
     category: category,
     brand: brand,
     color: color,
     season: season,
-    wornCount: wornCount,
+    wornCount: wornCount ?? this.wornCount,
     matchScore: matchScore,
     isFavorite: isFavorite ?? this.isFavorite,
     icon: icon,
@@ -296,20 +296,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         });
       }
     });
-    ApiService.fetchDashboard()
-        .then((data) {
-          if (mounted) {
-            final username = data['username'] as String?;
-            if (username != null &&
-                username.isNotEmpty &&
-                username.toLowerCase() != 'there') {
-              setState(() => _displayName = username);
-            }
-          }
-        })
-        .catchError((_) {
-          // Ignore
-        });
   }
 
   Future<void> _loadClosetItems() async {
@@ -438,6 +424,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
         } else {
           setState(() => _selectedIndex = 0);
         }
+    }
+  }
+
+  Future<void> _markWorn(String id) async {
+    final idx = _closetItems.indexWhere((e) => e.id == id);
+    if (idx == -1) return;
+    final previousCount = _closetItems[idx].wornCount;
+
+    // Optimistic update so the UI feels instant.
+    setState(() {
+      _closetItems[idx] = _closetItems[idx].copyWith(
+        wornCount: previousCount + 1,
+      );
+    });
+
+    try {
+      await ApiService.markItemWorn(id);
+    } catch (e) {
+      // Roll back if the server didn't accept it.
+      setState(() {
+        _closetItems[idx] = _closetItems[idx].copyWith(
+          wornCount: previousCount,
+        );
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Couldn't mark item as worn.")),
+        );
+      }
     }
   }
 

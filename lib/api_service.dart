@@ -51,22 +51,6 @@ class ApiService {
     };
   }
 
-  /// Fetch the dashboard greeting payload, e.g. { username, message }.
-  /// `username` is the server-resolved display name (falls back to the
-  /// email's local part server-side if none has been synced yet).
-  static Future<Map<String, dynamic>> fetchDashboard() async {
-    final headers = await _authHeaders();
-    final response = await http.get(
-      Uri.parse('$baseUrl/dashboard'),
-      headers: headers,
-    );
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    }
-    throw Exception('Failed to load dashboard (${response.statusCode})');
-  }
-
   /// Push the name typed at signup to the backend, once, right after the
   /// Firebase account is created. Safe to call again later too (it's a
   /// plain UPDATE, not an insert).
@@ -99,6 +83,22 @@ class ApiService {
       return data.cast<Map<String, dynamic>>();
     }
     throw Exception('Failed to load closet items (${response.statusCode})');
+  }
+
+  /// Logs one wear of an item, incrementing its wear count and stamping
+  /// last-worn-at. Returns the updated item.
+  static Future<Map<String, dynamic>> markItemWorn(String id) async {
+    final headers = await _authHeaders();
+    final response = await http.post(
+      Uri.parse('$baseUrl/items/$id/wear'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      return body['data'] as Map<String, dynamic>;
+    }
+    throw Exception('Failed to mark item as worn (${response.statusCode})');
   }
 
   // addClosetItem/updateClosetItem/deleteClosetItem below still point at the
