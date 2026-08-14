@@ -63,7 +63,7 @@ class _UploadScreenContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return JVAppShell(
       title: 'Upload Garment',
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -129,7 +129,7 @@ class _UploadScreenContent extends StatelessWidget {
                 ],
               ),
             ),
-            const Spacer(),
+            const SizedBox(height: AppSpacing.xxl),
             JVButton(
               text: 'Continue',
               onPressed: null, // Disabled until image selection (handled by routing)

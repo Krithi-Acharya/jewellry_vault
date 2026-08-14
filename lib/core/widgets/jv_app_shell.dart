@@ -3,6 +3,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_layout.dart';
+import 'jv_nav_drawer.dart';
 
 class JVAppShell extends StatelessWidget {
   final String title;
@@ -11,6 +12,7 @@ class JVAppShell extends StatelessWidget {
   final Widget? floatingActionButton;
   final bool showBackButton;
   final bool extendBodyBehindAppBar;
+  final bool showDrawer;
 
   const JVAppShell({
     super.key,
@@ -20,6 +22,7 @@ class JVAppShell extends StatelessWidget {
     this.floatingActionButton,
     this.showBackButton = true,
     this.extendBodyBehindAppBar = false,
+    this.showDrawer = true,
   });
 
   @override
@@ -27,6 +30,7 @@ class JVAppShell extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       extendBodyBehindAppBar: extendBodyBehindAppBar,
+      drawer: showDrawer ? const JVNavDrawer() : null,
       appBar: AppBar(
         title: Text(title, style: AppTypography.headingMedium),
         backgroundColor: Colors.transparent,
@@ -46,12 +50,24 @@ class JVAppShell extends StatelessWidget {
                 },
               )
             : null,
-        actions: actions != null
-            ? [
-                ...actions!,
-                const SizedBox(width: AppSpacing.md),
-              ]
-            : null,
+        actions: [
+          // The back arrow above already occupies `leading`, which is what
+          // Scaffold would otherwise auto-fill with a drawer toggle — so
+          // without this, a screen reached by pushing (i.e. almost all of
+          // them) would have a Drawer nobody can open except by an edge
+          // swipe. Only needed when both a back button AND a drawer exist;
+          // Dashboard has no back button, so it gets the automatic one.
+          if (showDrawer && showBackButton)
+            Builder(
+              builder: (context) => IconButton(
+                icon: const Icon(Icons.menu, color: AppColors.primaryText),
+                tooltip: 'Menu',
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
+            ),
+          if (actions != null) ...actions!,
+          const SizedBox(width: AppSpacing.md),
+        ],
       ),
       floatingActionButton: floatingActionButton,
       body: SafeArea(
