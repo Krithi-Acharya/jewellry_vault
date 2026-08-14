@@ -200,9 +200,9 @@ class _ClosetScreenState extends State<ClosetScreen> {
                         itemBuilder: (context, index) {
                           final item = provider.items[index];
                           final String? thumbnail = item['thumbnail_url'];
-                          final String imageUrl = thumbnail != null
+                          final String? imageUrl = thumbnail != null
                               ? '${AppConfig.apiBaseUrl.replaceAll('/api/v1', '')}$thumbnail'
-                              : '';
+                              : null;
                               
                           final String title = item['display_title'] ?? 'Unknown Item';
                           final String subtitle = item['display_subtitle'] ?? 'Unknown details';
