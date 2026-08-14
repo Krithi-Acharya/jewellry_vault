@@ -579,6 +579,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
               elevation: 0,
               title: _LogoRow(),
               iconTheme: const IconThemeData(color: AppColors.primaryEmerald),
+              // The drawer toggle sits on the right on every other screen
+              // (JVAppShell puts it there since a back arrow already owns
+              // `leading`) — matching that here instead of Flutter's default
+              // auto-placed left-side hamburger keeps it in the same spot
+              // everywhere.
+              automaticallyImplyLeading: false,
+              actions: [
+                Builder(
+                  builder: (context) => IconButton(
+                    icon: const Icon(Icons.menu),
+                    tooltip: 'Menu',
+                    onPressed: () => Scaffold.of(context).openDrawer(),
+                  ),
+                ),
+                const SizedBox(width: 16),
+              ],
             )
           : null,
       body: Row(
@@ -973,46 +989,67 @@ class _DashboardView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── HERO GREETING ──────────────────────────────────
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          greeting.icon,
-                          size: 22,
-                          color: JewelVaultColors.accentGold,
-                        ),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            '${greeting.title}, $firstName',
-                            style: JewelVaultTypography.display.copyWith(
-                              fontSize: 30,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+          LayoutBuilder(
+            builder: (ctx, constraints) {
+              final isNarrow = constraints.maxWidth < 420;
+
+              final greetingColumn = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        greeting.icon,
+                        size: 22,
+                        color: JewelVaultColors.accentGold,
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          '${greeting.title}, $firstName',
+                          style: JewelVaultTypography.display.copyWith(
+                            fontSize: isNarrow ? 24 : 30,
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      greeting.subtitle,
-                      style: JewelVaultTypography.bodyLarge,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              _QuickActionButton(
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    greeting.subtitle,
+                    style: JewelVaultTypography.bodyLarge,
+                  ),
+                ],
+              );
+
+              final addButton = _QuickActionButton(
                 label: 'Add Item',
                 icon: Icons.add,
                 onTap: onNavigateToAdd,
-              ),
-            ],
+              );
+
+              if (isNarrow) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    greetingColumn,
+                    const SizedBox(height: 16),
+                    Align(alignment: Alignment.centerLeft, child: addButton),
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: greetingColumn),
+                  const SizedBox(width: 16),
+                  addButton,
+                ],
+              );
+            },
           ),
 
           const SizedBox(height: 32),
