@@ -80,6 +80,19 @@ class ClosetService {
     return [];
   }
 
+  // Log one wear of an item (increments wear count, stamps last-worn-at)
+  Future<Map<String, dynamic>> markWorn(int id) async {
+    final options = await _getAuthOptions();
+    final url = '${AppConfig.apiBaseUrl}/items/$id/wear';
+
+    final response = await _dio.post(
+      url,
+      options: options,
+    );
+
+    return response.data['data'];
+  }
+
   // Clarify item category
   Future<Map<String, dynamic>> clarifyItem(int id, String type, String categoryName) async {
     final options = await _getAuthOptions();

@@ -85,6 +85,8 @@ export const mapItemToDto = (item) => {
     deletedAt: item.ci_deleted_at,
     images: images,
     attributes: item.closet_item_attributes || null,
+    wornCount: item.ci_wear_count ?? 0,
+    lastWornAt: item.ci_last_worn_at,
   };
 };
 
@@ -329,6 +331,8 @@ export const getItemMetadata = async (req, res) => {
       status_label: statusLabel,
       categoryName: item.item_categories?.itc_name || null,
       isFavorite: item.ci_is_favorite || false,
+      wornCount: item.ci_wear_count ?? 0,
+      lastWornAt: item.ci_last_worn_at,
       image: item.closet_item_images?.[0]?.cii_url,
       attributes: mapAiAttributesToFlutter(aiAttributes),
       tags: [], // Using empty tags array for now, since Flutter relies on attributes
@@ -477,6 +481,44 @@ export const deleteItem = async (req, res) => {
   } catch (error) {
     console.error('Error deleting item:', error);
     res.status(500).json({ success: false, message: 'Failed to delete item' });
+  }
+};
+
+export const markItemWorn = async (req, res) => {
+  try {
+    const userId = req.dbUser?.usr_id;
+    const itemId = parseInt(req.params.id);
+    if (!userId) return res.status(403).json({ success: false, message: 'Forbidden' });
+
+    const existing = await prisma.closet_items.findUnique({
+      where: { ci_id: itemId }
+    });
+
+    if (!existing || existing.ci_usr_id !== userId || existing.ci_is_deleted) {
+      return res.status(404).json({ success: false, message: 'Item not found' });
+    }
+
+    const item = await prisma.closet_items.update({
+      where: { ci_id: itemId },
+      data: {
+        ci_wear_count: { increment: 1 },
+        ci_last_worn_at: new Date(),
+      },
+      include: {
+        item_categories: true,
+        closet_item_images: true,
+        closet_item_ai_tags: true,
+        closet_item_attributes: true,
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      data: mapItemToDto(item),
+    });
+  } catch (error) {
+    console.error('Error marking item worn:', error);
+    res.status(500).json({ success: false, message: 'Failed to mark item as worn' });
   }
 };
 

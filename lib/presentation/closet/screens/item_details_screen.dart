@@ -32,6 +32,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
 
   bool _isSaving = false;
   bool _isFavorite = false;
+  int _wornCount = 0;
+  bool _isMarkingWorn = false;
 
   final Map<String, TextEditingController> _attrControllers = {};
   List<Map<String, dynamic>> _editedColors = [];
@@ -65,6 +67,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
       setState(() {
         _metadata = data;
         _isFavorite = data['isFavorite'] ?? false;
+        _wornCount = data['wornCount'] ?? 0;
         _isLoading = false;
 
         _initEditState();
@@ -102,6 +105,36 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
     } catch (e) {
       print('Error toggling favorite: $e');
       setState(() => _isFavorite = !_isFavorite); // Revert on failure
+    }
+  }
+
+  Future<void> _markWorn() async {
+    if (_isMarkingWorn) return;
+    setState(() {
+      _isMarkingWorn = true;
+      _wornCount += 1; // Optimistic
+    });
+    try {
+      final token = await AuthService.instance.getIdToken();
+      final url = '${AppConfig.apiBaseUrl}/items/${widget.itemId}/wear';
+
+      await _dio.post(
+        url,
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Marked as worn today.')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _wornCount -= 1); // Revert on failure
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Couldn't mark item as worn.")),
+      );
+    } finally {
+      if (mounted) setState(() => _isMarkingWorn = false);
     }
   }
 
@@ -444,6 +477,31 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
     );
   }
 
+  Widget _buildMarkWornSection() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: _isMarkingWorn ? null : _markWorn,
+        icon: _isMarkingWorn
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.checkroom, color: AppColors.primaryEmerald),
+        label: Text(
+          _wornCount > 0 ? 'Mark as Worn  •  Worn $_wornCount×' : 'Mark as Worn',
+          style: AppTypography.labelLarge.copyWith(color: AppColors.primaryEmerald),
+        ),
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: AppColors.primaryEmerald),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      ),
+    );
+  }
+
   Widget _buildAiAnalysisSection() {
     final attributes = _metadata!['attributes'] as List<dynamic>? ?? [];
     double confidence = 0.0;
@@ -682,6 +740,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
           const SizedBox(height: AppSpacing.xl),
 
           _buildStyleWithAiSection(),
+          const SizedBox(height: AppSpacing.md),
+          _buildMarkWornSection(),
           const SizedBox(height: AppSpacing.xl),
 
           _buildAiAnalysisSection(),

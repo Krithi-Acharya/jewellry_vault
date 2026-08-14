@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { verifyFirebaseToken } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { createItemSchema, updateItemSchema } from '../validators/item.validator.js';
-import { createItem, getItems, getItemById, updateItem, deleteItem, uploadItem, getItemMetadata, replaceItemImage, getCategories, clarifyItem } from '../controllers/itemController.js';
+import { createItem, getItems, getItemById, updateItem, deleteItem, uploadItem, getItemMetadata, replaceItemImage, getCategories, clarifyItem, markItemWorn } from '../controllers/itemController.js';
 import { upload } from '../middleware/upload.js';
 
 const router = Router();
@@ -18,6 +18,7 @@ router.get('/:id/metadata', getItemMetadata);
 router.get('/:id', getItemById);
 router.put('/:id', validate(updateItemSchema), updateItem);
 router.patch('/:id/clarify', clarifyItem);
+router.post('/:id/wear', markItemWorn);
 router.post('/:id/image', upload.single('image'), replaceItemImage);
 router.delete('/:id', deleteItem);
 
