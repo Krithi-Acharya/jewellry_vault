@@ -90,57 +90,59 @@ class LandingPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _LandingColors.background,
-      body: Stack(
-        children: [
-          // Background ambient blurs
-          Positioned(
-            top: -200,
-            right: -100,
-            child: Container(
-              width: 800,
-              height: 800,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _LandingColors.primaryEmerald.withOpacity(0.04),
-              ),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
-                child: Container(color: Colors.transparent),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 600,
-            left: -200,
-            child: Container(
-              width: 600,
-              height: 600,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _LandingColors.primaryEmerald.withOpacity(0.03),
-              ),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-                child: Container(color: Colors.transparent),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            // Background ambient blurs
+            Positioned(
+              top: -200,
+              right: -100,
+              child: Container(
+                width: 800,
+                height: 800,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _LandingColors.primaryEmerald.withOpacity(0.04),
+                ),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
+                  child: Container(color: Colors.transparent),
+                ),
               ),
             ),
-          ),
-          // Main Scroll Content
-          const SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _NavBar(),
-                _HeroSection(),
-                _FeaturesSection(),
-                _HowItWorksSection(),
-                _TestimonialSection(),
-                _FinalCTASection(),
-                _FooterSection(),
-              ],
+            Positioned(
+              top: 600,
+              left: -200,
+              child: Container(
+                width: 600,
+                height: 600,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _LandingColors.primaryEmerald.withOpacity(0.03),
+                ),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+                  child: Container(color: Colors.transparent),
+                ),
+              ),
             ),
-          ),
-        ],
+            // Main Scroll Content
+            const SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _NavBar(),
+                  _HeroSection(),
+                  _FeaturesSection(),
+                  _HowItWorksSection(),
+                  _TestimonialSection(),
+                  _FinalCTASection(),
+                  _FooterSection(),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -169,12 +171,19 @@ class _NavBar extends StatelessWidget {
                   color: _LandingColors.primaryEmerald,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.diamond_outlined, color: Colors.white, size: 24),
+                child: const Icon(
+                  Icons.diamond_outlined,
+                  color: Colors.white,
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 16),
               Text(
                 'JewellryVault',
-                style: _LandingTypography.headingLarge.copyWith(fontSize: 24, letterSpacing: -0.5),
+                style: _LandingTypography.headingLarge.copyWith(
+                  fontSize: 24,
+                  letterSpacing: -0.5,
+                ),
               ),
             ],
           ),
@@ -239,7 +248,11 @@ class _PrimaryButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool isDark;
 
-  const _PrimaryButton({required this.text, this.onPressed, this.isDark = true});
+  const _PrimaryButton({
+    required this.text,
+    this.onPressed,
+    this.isDark = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -251,14 +264,18 @@ class _PrimaryButton extends StatelessWidget {
               color: _LandingColors.primaryEmerald.withOpacity(0.3),
               blurRadius: 20,
               offset: const Offset(0, 8),
-            )
+            ),
         ],
       ),
       child: ElevatedButton(
         onPressed: onPressed ?? () {},
         style: ElevatedButton.styleFrom(
-          backgroundColor: isDark ? _LandingColors.primaryEmerald : Colors.white,
-          foregroundColor: isDark ? Colors.white : _LandingColors.primaryEmerald,
+          backgroundColor: isDark
+              ? _LandingColors.primaryEmerald
+              : Colors.white,
+          foregroundColor: isDark
+              ? Colors.white
+              : _LandingColors.primaryEmerald,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
           shape: RoundedRectangleBorder(
@@ -311,19 +328,25 @@ class _HeroSection extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              border: Border.all(color: _LandingColors.primaryEmerald.withOpacity(0.2)),
+              border: Border.all(
+                color: _LandingColors.primaryEmerald.withOpacity(0.2),
+              ),
               borderRadius: BorderRadius.circular(32),
               color: Colors.white.withOpacity(0.5),
             ),
             child: Text(
               'Introducing AI Styling',
-              style: _LandingTypography.labelLarge.copyWith(color: _LandingColors.primaryEmerald),
+              style: _LandingTypography.labelLarge.copyWith(
+                color: _LandingColors.primaryEmerald,
+              ),
             ),
           ),
           const SizedBox(height: 32),
           Text(
             'Your Curated Collection,\nPerfectly Matched.',
-            style: isDesktop ? _LandingTypography.displayMassive : _LandingTypography.displayMedium,
+            style: isDesktop
+                ? _LandingTypography.displayMassive
+                : _LandingTypography.displayMedium,
           ),
           const SizedBox(height: 32),
           Text(
@@ -343,8 +366,14 @@ class _HeroSection extends StatelessWidget {
                 onPressed: () {},
                 style: OutlinedButton.styleFrom(
                   foregroundColor: _LandingColors.primaryText,
-                  side: const BorderSide(color: _LandingColors.border, width: 1),
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                  side: const BorderSide(
+                    color: _LandingColors.border,
+                    width: 1,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 24,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -367,12 +396,19 @@ class _HeroSection extends StatelessWidget {
         // tablet-width DevTools window). Cards always size themselves
         // off this capped width instead of the raw available width.
         final groupWidth = isDesktop ? maxW : maxW.clamp(0.0, 380.0);
-        final stackHeight = (isDesktop ? height * 0.8 : 480.0).clamp(400.0, 800.0);
+        final stackHeight = (isDesktop ? height * 0.8 : 480.0).clamp(
+          400.0,
+          800.0,
+        );
 
-        final dressWidth = isDesktop ? 360.0 : (groupWidth * 0.62).clamp(160.0, 240.0);
+        final dressWidth = isDesktop
+            ? 360.0
+            : (groupWidth * 0.62).clamp(160.0, 240.0);
         final dressHeight = isDesktop ? 480.0 : dressWidth * (380 / 280);
 
-        final pendantWidth = isDesktop ? 280.0 : (groupWidth * 0.52).clamp(140.0, 190.0);
+        final pendantWidth = isDesktop
+            ? 280.0
+            : (groupWidth * 0.52).clamp(140.0, 190.0);
         final pendantHeight = isDesktop ? 320.0 : pendantWidth * (260 / 220);
 
         final stack = SizedBox(
@@ -427,12 +463,18 @@ class _HeroSection extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Silk Slip Dress', style: _LandingTypography.headingMedium),
+                            Text(
+                              'Silk Slip Dress',
+                              style: _LandingTypography.headingMedium,
+                            ),
                             const SizedBox(height: 4),
-                            Text('Evening Wear', style: _LandingTypography.bodyMedium),
+                            Text(
+                              'Evening Wear',
+                              style: _LandingTypography.bodyMedium,
+                            ),
                           ],
                         ),
-                      )
+                      ),
                     ],
                   ),
                 ),
@@ -469,7 +511,9 @@ class _HeroSection extends StatelessWidget {
                               margin: const EdgeInsets.all(8),
                               clipBehavior: Clip.antiAlias,
                               decoration: BoxDecoration(
-                                color: _LandingColors.background.withOpacity(0.5),
+                                color: _LandingColors.background.withOpacity(
+                                  0.5,
+                                ),
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Image.network(
@@ -503,7 +547,7 @@ class _HeroSection extends StatelessWidget {
                                 ),
                               ],
                             ),
-                          )
+                          ),
                         ],
                       ),
                     ),
@@ -516,7 +560,10 @@ class _HeroSection extends StatelessWidget {
                 right: isDesktop ? 20 : 8,
                 top: isDesktop ? 160 : 90,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: _LandingColors.primaryEmerald,
                     borderRadius: BorderRadius.circular(32),
@@ -531,11 +578,17 @@ class _HeroSection extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+                      const Icon(
+                        Icons.auto_awesome,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         '98% Match',
-                        style: _LandingTypography.labelLarge.copyWith(color: Colors.white),
+                        style: _LandingTypography.labelLarge.copyWith(
+                          color: Colors.white,
+                        ),
                       ),
                     ],
                   ),
@@ -550,14 +603,15 @@ class _HeroSection extends StatelessWidget {
         // stretch corner-to-corner.
         return isDesktop
             ? stack
-            : SizedBox(width: maxW, child: Center(child: stack));
+            : SizedBox(
+                width: maxW,
+                child: Center(child: stack),
+              );
       },
     );
 
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: isDesktop ? 80 : 24,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: isDesktop ? 80 : 24),
       constraints: BoxConstraints(minHeight: isDesktop ? height * 0.85 : 800),
       child: isDesktop
           ? Row(
@@ -601,7 +655,9 @@ class _FeaturesSection extends StatelessWidget {
               children: [
                 Text(
                   'The Art of Curation',
-                  style: isDesktop ? _LandingTypography.displayLarge : _LandingTypography.displayMedium,
+                  style: isDesktop
+                      ? _LandingTypography.displayLarge
+                      : _LandingTypography.displayMedium,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
@@ -622,7 +678,8 @@ class _FeaturesSection extends StatelessWidget {
                   child: _FeatureCard(
                     icon: Icons.inventory_2_outlined,
                     title: 'Digital Vault',
-                    description: 'Digitize your entire collection with high-fidelity cataloging. Keep immaculate records of every piece you own.',
+                    description:
+                        'Digitize your entire collection with high-fidelity cataloging. Keep immaculate records of every piece you own.',
                   ),
                 ),
                 const SizedBox(width: 40),
@@ -630,7 +687,8 @@ class _FeaturesSection extends StatelessWidget {
                   child: _FeatureCard(
                     icon: Icons.auto_awesome_outlined,
                     title: 'AI Match Engine',
-                    description: 'Our proprietary intelligence pairs your Jewellryry with your garments, unlocking unseen aesthetic combinations.',
+                    description:
+                        'Our proprietary intelligence pairs your Jewellryry with your garments, unlocking unseen aesthetic combinations.',
                   ),
                 ),
                 const SizedBox(width: 40),
@@ -638,7 +696,8 @@ class _FeaturesSection extends StatelessWidget {
                   child: _FeatureCard(
                     icon: Icons.view_carousel_outlined,
                     title: 'Lookbook Canvas',
-                    description: 'Plan your outfits visually. Drag, drop, and design your daily looks on an elegant, infinite digital canvas.',
+                    description:
+                        'Plan your outfits visually. Drag, drop, and design your daily looks on an elegant, infinite digital canvas.',
                   ),
                 ),
               ],
@@ -650,19 +709,22 @@ class _FeaturesSection extends StatelessWidget {
                 const _FeatureCard(
                   icon: Icons.inventory_2_outlined,
                   title: 'Digital Vault',
-                  description: 'Digitize your entire collection with high-fidelity cataloging. Keep immaculate records of every piece you own.',
+                  description:
+                      'Digitize your entire collection with high-fidelity cataloging. Keep immaculate records of every piece you own.',
                 ),
                 const SizedBox(height: 32),
                 const _FeatureCard(
                   icon: Icons.auto_awesome_outlined,
                   title: 'AI Match Engine',
-                  description: 'Our proprietary intelligence pairs your Jewellryry with your garments, unlocking unseen aesthetic combinations.',
+                  description:
+                      'Our proprietary intelligence pairs your Jewellryry with your garments, unlocking unseen aesthetic combinations.',
                 ),
                 const SizedBox(height: 32),
                 const _FeatureCard(
                   icon: Icons.view_carousel_outlined,
                   title: 'Lookbook Canvas',
-                  description: 'Plan your outfits visually. Drag, drop, and design your daily looks on an elegant, infinite digital canvas.',
+                  description:
+                      'Plan your outfits visually. Drag, drop, and design your daily looks on an elegant, infinite digital canvas.',
                 ),
               ],
             ),
@@ -704,7 +766,9 @@ class _FeatureCardState extends State<_FeatureCard> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(32),
           border: Border.all(
-            color: _isHovered ? _LandingColors.primaryEmerald.withOpacity(0.2) : Colors.white,
+            color: _isHovered
+                ? _LandingColors.primaryEmerald.withOpacity(0.2)
+                : Colors.white,
           ),
           boxShadow: [
             BoxShadow(
@@ -713,7 +777,7 @@ class _FeatureCardState extends State<_FeatureCard> {
                   : Colors.black.withOpacity(0.03),
               blurRadius: _isHovered ? 40 : 20,
               offset: Offset(0, _isHovered ? 20 : 10),
-            )
+            ),
           ],
         ),
         child: Column(
@@ -725,7 +789,10 @@ class _FeatureCardState extends State<_FeatureCard> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: _isHovered
-                      ? [_LandingColors.primaryEmerald, _LandingColors.darkEmerald]
+                      ? [
+                          _LandingColors.primaryEmerald,
+                          _LandingColors.darkEmerald,
+                        ]
                       : [_LandingColors.background, _LandingColors.background],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -734,20 +801,16 @@ class _FeatureCardState extends State<_FeatureCard> {
               ),
               child: Icon(
                 widget.icon,
-                color: _isHovered ? Colors.white : _LandingColors.primaryEmerald,
+                color: _isHovered
+                    ? Colors.white
+                    : _LandingColors.primaryEmerald,
                 size: 40,
               ),
             ),
             const SizedBox(height: 40),
-            Text(
-              widget.title,
-              style: _LandingTypography.headingLarge,
-            ),
+            Text(widget.title, style: _LandingTypography.headingLarge),
             const SizedBox(height: 20),
-            Text(
-              widget.description,
-              style: _LandingTypography.bodyLarge,
-            ),
+            Text(widget.description, style: _LandingTypography.bodyLarge),
           ],
         ),
       ),
@@ -772,7 +835,9 @@ class _HowItWorksSection extends StatelessWidget {
         children: [
           Text(
             'The Process',
-            style: isDesktop ? _LandingTypography.displayLarge : _LandingTypography.displayMedium,
+            style: isDesktop
+                ? _LandingTypography.displayLarge
+                : _LandingTypography.displayMedium,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 100),
@@ -784,7 +849,8 @@ class _HowItWorksSection extends StatelessWidget {
                   child: _TimelineStep(
                     step: '01',
                     title: 'Upload Collection',
-                    description: 'Snap photos or sync from your favorite boutiques. We automatically isolate items for a clean catalog look.',
+                    description:
+                        'Snap photos or sync from your favorite boutiques. We automatically isolate items for a clean catalog look.',
                   ),
                 ),
                 const SizedBox(width: 80),
@@ -792,7 +858,8 @@ class _HowItWorksSection extends StatelessWidget {
                   child: _TimelineStep(
                     step: '02',
                     title: 'AI Understands',
-                    description: 'Our engine analyzes color palettes, textures, and silhouettes to build your personalized style profile.',
+                    description:
+                        'Our engine analyzes color palettes, textures, and silhouettes to build your personalized style profile.',
                   ),
                 ),
                 const SizedBox(width: 80),
@@ -800,7 +867,8 @@ class _HowItWorksSection extends StatelessWidget {
                   child: _TimelineStep(
                     step: '03',
                     title: 'Perfect Matches',
-                    description: 'Get daily curation. See which necklace perfectly complements your new dress before you even put it on.',
+                    description:
+                        'Get daily curation. See which necklace perfectly complements your new dress before you even put it on.',
                   ),
                 ),
               ],
@@ -812,19 +880,22 @@ class _HowItWorksSection extends StatelessWidget {
                 const _TimelineStep(
                   step: '01',
                   title: 'Upload Collection',
-                  description: 'Snap photos or sync from your favorite boutiques. We automatically isolate items for a clean catalog look.',
+                  description:
+                      'Snap photos or sync from your favorite boutiques. We automatically isolate items for a clean catalog look.',
                 ),
                 const SizedBox(height: 48),
                 const _TimelineStep(
                   step: '02',
                   title: 'AI Understands',
-                  description: 'Our engine analyzes color palettes, textures, and silhouettes to build your personalized style profile.',
+                  description:
+                      'Our engine analyzes color palettes, textures, and silhouettes to build your personalized style profile.',
                 ),
                 const SizedBox(height: 48),
                 const _TimelineStep(
                   step: '03',
                   title: 'Perfect Matches',
-                  description: 'Get daily curation. See which necklace perfectly complements your new dress before you even put it on.',
+                  description:
+                      'Get daily curation. See which necklace perfectly complements your new dress before you even put it on.',
                 ),
               ],
             ),
@@ -860,21 +931,11 @@ class _TimelineStep extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 32),
-        Container(
-          height: 2,
-          width: 80,
-          color: _LandingColors.primaryEmerald,
-        ),
+        Container(height: 2, width: 80, color: _LandingColors.primaryEmerald),
         const SizedBox(height: 32),
-        Text(
-          title,
-          style: _LandingTypography.headingLarge,
-        ),
+        Text(title, style: _LandingTypography.headingLarge),
         const SizedBox(height: 16),
-        Text(
-          description,
-          style: _LandingTypography.bodyLarge,
-        ),
+        Text(description, style: _LandingTypography.bodyLarge),
       ],
     );
   }
@@ -899,7 +960,9 @@ class _TestimonialSection extends StatelessWidget {
             'Curated Feedback',
             style: isDesktop
                 ? _LandingTypography.displayLarge.copyWith(color: Colors.white)
-                : _LandingTypography.displayMedium.copyWith(color: Colors.white),
+                : _LandingTypography.displayMedium.copyWith(
+                    color: Colors.white,
+                  ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 80),
@@ -945,18 +1008,26 @@ class _MockReviewCard extends StatelessWidget {
           Row(
             children: List.generate(
               5,
-              (index) => const Icon(Icons.star, color: _LandingColors.border, size: 16)
+              (index) => const Icon(
+                Icons.star,
+                color: _LandingColors.border,
+                size: 16,
+              ),
             ),
           ),
           const SizedBox(height: 32),
           Text(
             '"Mock Review"',
-            style: _LandingTypography.headingMedium.copyWith(color: Colors.white),
+            style: _LandingTypography.headingMedium.copyWith(
+              color: Colors.white,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
             'This is a placeholder for a future review from a client or critic.',
-            style: _LandingTypography.bodyMedium.copyWith(color: Colors.white.withOpacity(0.6)),
+            style: _LandingTypography.bodyMedium.copyWith(
+              color: Colors.white.withOpacity(0.6),
+            ),
           ),
           const SizedBox(height: 48),
           Row(
@@ -979,7 +1050,7 @@ class _MockReviewCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(4),
-                    )
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Container(
@@ -988,7 +1059,7 @@ class _MockReviewCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
-                    )
+                    ),
                   ),
                 ],
               ),
@@ -1024,7 +1095,9 @@ class _FinalCTASection extends StatelessWidget {
           children: [
             Text(
               'Ready to elevate your collection?',
-              style: isDesktop ? _LandingTypography.displayLarge : _LandingTypography.displayMedium,
+              style: isDesktop
+                  ? _LandingTypography.displayLarge
+                  : _LandingTypography.displayMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 48),
@@ -1068,12 +1141,18 @@ class _FooterSection extends StatelessWidget {
           Flex(
             direction: isDesktop ? Axis.horizontal : Axis.vertical,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: isDesktop ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+            crossAxisAlignment: isDesktop
+                ? CrossAxisAlignment.center
+                : CrossAxisAlignment.start,
             children: [
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.diamond_outlined, color: _LandingColors.primaryEmerald, size: 24),
+                  const Icon(
+                    Icons.diamond_outlined,
+                    color: _LandingColors.primaryEmerald,
+                    size: 24,
+                  ),
                   const SizedBox(width: 12),
                   Text(
                     'JewellryVault',
@@ -1084,7 +1163,9 @@ class _FooterSection extends StatelessWidget {
               if (!isDesktop) const SizedBox(height: 48),
               Flexible(
                 child: Wrap(
-                  alignment: isDesktop ? WrapAlignment.end : WrapAlignment.start,
+                  alignment: isDesktop
+                      ? WrapAlignment.end
+                      : WrapAlignment.start,
                   spacing: 40,
                   runSpacing: 16,
                   children: const [

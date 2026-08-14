@@ -67,18 +67,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
     'Statement Party',
   ];
 
-  final List<String> ringSizes = ['US 5', 'US 6', 'US 7', 'US 8', 'US 9', 'Custom'];
+  final List<String> ringSizes = [
+    'US 5',
+    'US 6',
+    'US 7',
+    'US 8',
+    'US 9',
+    'Custom',
+  ];
   final List<String> apparelSizes = ['XS', 'S', 'M', 'L', 'XL', 'Custom'];
   final List<String> currencies = ['USD (\$)', 'INR (₹)', 'EUR (€)', 'GBP (£)'];
 
   @override
   void initState() {
     super.initState();
-    final initialName = user?.displayName != null && user!.displayName!.isNotEmpty
+    final initialName =
+        user?.displayName != null && user!.displayName!.isNotEmpty
         ? user!.displayName!
         : (user?.email != null && user!.email!.contains('@')
-            ? user!.email!.split('@')[0][0].toUpperCase() + user!.email!.split('@')[0].substring(1)
-            : 'Annika');
+              ? user!.email!.split('@')[0][0].toUpperCase() +
+                    user!.email!.split('@')[0].substring(1)
+              : 'Annika');
 
     nameController = TextEditingController(text: initialName);
     phoneController = TextEditingController(text: '+1 (555) 234-5678');
@@ -99,24 +108,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadPreferences() async {
     setState(() {
-      selectedUndertone = _localProfileStore['pref_undertone'] as String? ?? 'Warm Gold';
-      selectedMetal = _localProfileStore['pref_metal'] as String? ?? 'Yellow Gold';
-      selectedRingSize = _localProfileStore['pref_ring_size'] as String? ?? 'US 7';
-      selectedApparelSize = _localProfileStore['pref_apparel_size'] as String? ?? 'M';
-      selectedCurrency = _localProfileStore['pref_currency'] as String? ?? 'USD (\$)';
-      phoneController.text = _localProfileStore['pref_phone'] as String? ?? '+1 (555) 234-5678';
-      mottoController.text = _localProfileStore['pref_motto'] as String? ??
+      selectedUndertone =
+          _localProfileStore['pref_undertone'] as String? ?? 'Warm Gold';
+      selectedMetal =
+          _localProfileStore['pref_metal'] as String? ?? 'Yellow Gold';
+      selectedRingSize =
+          _localProfileStore['pref_ring_size'] as String? ?? 'US 7';
+      selectedApparelSize =
+          _localProfileStore['pref_apparel_size'] as String? ?? 'M';
+      selectedCurrency =
+          _localProfileStore['pref_currency'] as String? ?? 'USD (\$)';
+      phoneController.text =
+          _localProfileStore['pref_phone'] as String? ?? '+1 (555) 234-5678';
+      mottoController.text =
+          _localProfileStore['pref_motto'] as String? ??
           'Lover of timeless gold jewelry and minimalist ethnic wear.';
 
-      final savedAesthetics = _localProfileStore['pref_aesthetics'] as List<String>?;
+      final savedAesthetics =
+          _localProfileStore['pref_aesthetics'] as List<String>?;
       if (savedAesthetics != null) {
         selectedAesthetics.clear();
         selectedAesthetics.addAll(savedAesthetics);
       }
 
-      notifyRecommendations = _localProfileStore['pref_notify_rec'] as bool? ?? true;
-      notifyPairingAlerts = _localProfileStore['pref_notify_pairing'] as bool? ?? true;
-      notifySecurityLogs = _localProfileStore['pref_notify_sec'] as bool? ?? false;
+      notifyRecommendations =
+          _localProfileStore['pref_notify_rec'] as bool? ?? true;
+      notifyPairingAlerts =
+          _localProfileStore['pref_notify_pairing'] as bool? ?? true;
+      notifySecurityLogs =
+          _localProfileStore['pref_notify_sec'] as bool? ?? false;
 
       isLoadingPrefs = false;
     });
@@ -172,9 +192,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       setState(() => isUploadingPhoto = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
       }
     }
   }
@@ -183,13 +203,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => photoUrl = null);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Photo removed — tap Save Changes to confirm')),
+        const SnackBar(
+          content: Text('Photo removed — tap Save Changes to confirm'),
+        ),
       );
     }
   }
 
   Future<void> saveChanges() async {
-    final nameToSave = nameController.text.trim().isEmpty ? 'Annika' : nameController.text.trim();
+    final nameToSave = nameController.text.trim().isEmpty
+        ? 'Annika'
+        : nameController.text.trim();
     await user?.updateDisplayName(nameToSave);
     await user?.updatePhotoURL(photoUrl ?? '');
     await user?.reload();
@@ -217,7 +241,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final displayName = nameController.text.isEmpty ? 'Annika' : nameController.text;
+    final displayName = nameController.text.isEmpty
+        ? 'Annika'
+        : nameController.text;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -233,23 +259,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
             border: Border.all(color: AppColors.border),
           ),
           child: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.primaryText, size: 18),
+            icon: const Icon(
+              Icons.arrow_back,
+              color: AppColors.primaryText,
+              size: 18,
+            ),
             onPressed: () => Navigator.of(context).maybePop(),
           ),
         ),
-        title: Text('Profile & Preferences', style: AppTypography.headingMedium),
+        title: Text(
+          'Profile & Preferences',
+          style: AppTypography.headingMedium,
+        ),
         centerTitle: false,
         actions: [
           IconButton(
-            icon: Icon(isEditing ? Icons.check_circle : Icons.edit_note_rounded, color: AppColors.primaryEmerald, size: 24),
-            onPressed: isEditing ? saveChanges : () => setState(() => isEditing = true),
+            icon: Icon(
+              isEditing ? Icons.check_circle : Icons.edit_note_rounded,
+              color: AppColors.primaryEmerald,
+              size: 24,
+            ),
+            onPressed: isEditing
+                ? saveChanges
+                : () => setState(() => isEditing = true),
             tooltip: isEditing ? 'Save Changes' : 'Edit Profile',
           ),
           const SizedBox(width: 8),
         ],
       ),
       body: isLoadingPrefs
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primaryEmerald))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primaryEmerald),
+            )
           : SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               child: Center(
@@ -298,15 +339,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: isEditing ? saveChanges : () => setState(() => isEditing = true),
-                              icon: Icon(isEditing ? Icons.check : Icons.edit_outlined, size: 18),
-                              label: Text(isEditing ? 'Save Profile' : 'Edit Profile'),
+                              onPressed: isEditing
+                                  ? saveChanges
+                                  : () => setState(() => isEditing = true),
+                              icon: Icon(
+                                isEditing ? Icons.check : Icons.edit_outlined,
+                                size: 18,
+                              ),
+                              label: Text(
+                                isEditing ? 'Save Profile' : 'Edit Profile',
+                              ),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primaryEmerald,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                                 elevation: 0,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
                                 textStyle: AppTypography.labelLarge,
                               ),
                             ),
@@ -314,12 +366,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           const SizedBox(width: 16),
                           OutlinedButton.icon(
                             onPressed: logout,
-                            icon: const Icon(Icons.logout, size: 18, color: Colors.redAccent),
-                            label: const Text('Log Out', style: TextStyle(color: Colors.redAccent)),
+                            icon: const Icon(
+                              Icons.logout,
+                              size: 18,
+                              color: Colors.redAccent,
+                            ),
+                            label: const Text(
+                              'Log Out',
+                              style: TextStyle(color: Colors.redAccent),
+                            ),
                             style: OutlinedButton.styleFrom(
                               side: const BorderSide(color: Colors.redAccent),
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 16,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
                               textStyle: AppTypography.labelLarge,
                             ),
                           ),
@@ -361,11 +425,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: CircleAvatar(
                   radius: 52,
                   backgroundColor: AppColors.accentGoldLight,
-                  backgroundImage: photoUrl != null ? NetworkImage(photoUrl!) : null,
+                  backgroundImage: photoUrl != null
+                      ? NetworkImage(photoUrl!)
+                      : null,
                   child: photoUrl == null
                       ? Text(
-                          displayName.isNotEmpty ? displayName[0].toUpperCase() : 'A',
-                          style: AppTypography.headingLarge.copyWith(color: AppColors.accentGold),
+                          displayName.isNotEmpty
+                              ? displayName[0].toUpperCase()
+                              : 'A',
+                          style: AppTypography.headingLarge.copyWith(
+                            color: AppColors.accentGold,
+                          ),
                         )
                       : null,
                 ),
@@ -386,9 +456,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ? const SizedBox(
                             width: 14,
                             height: 14,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
-                        : const Icon(Icons.camera_alt_outlined, size: 16, color: Colors.white),
+                        : const Icon(
+                            Icons.camera_alt_outlined,
+                            size: 16,
+                            color: Colors.white,
+                          ),
                   ),
                 ),
               ),
@@ -398,7 +475,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 8),
             TextButton.icon(
               onPressed: isUploadingPhoto ? null : removePhoto,
-              icon: const Icon(Icons.delete_outline, size: 14, color: Colors.redAccent),
+              icon: const Icon(
+                Icons.delete_outline,
+                size: 14,
+                color: Colors.redAccent,
+              ),
               label: const Text(
                 'Remove Photo',
                 style: TextStyle(color: Colors.redAccent, fontSize: 12),
@@ -418,7 +499,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       hintText: 'Full Name',
                       filled: true,
                       fillColor: AppColors.background,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(color: AppColors.border),
@@ -432,11 +516,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.mail_outline, size: 14, color: AppColors.secondaryText),
+              const Icon(
+                Icons.mail_outline,
+                size: 14,
+                color: AppColors.secondaryText,
+              ),
               const SizedBox(width: 6),
-              Text(
-                user?.email ?? 'annika@example.com',
-                style: AppTypography.bodyMedium.copyWith(color: AppColors.secondaryText),
+              Flexible(
+                child: Text(
+                  user?.email ?? 'annika@example.com',
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: AppColors.secondaryText,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
               ),
             ],
           ),
@@ -488,9 +582,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.person_outline, color: AppColors.primaryEmerald, size: 20),
+              const Icon(
+                Icons.person_outline,
+                color: AppColors.primaryEmerald,
+                size: 20,
+              ),
               const SizedBox(width: 10),
-              Text('Personal Details', style: AppTypography.headingSmall.copyWith(fontSize: 16)),
+              Text(
+                'Personal Details',
+                style: AppTypography.headingSmall.copyWith(fontSize: 16),
+              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -498,7 +599,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 16),
 
           // Phone
-          Text('PHONE NUMBER', style: AppTypography.labelSmall.copyWith(fontSize: 10, letterSpacing: 0.8)),
+          Text(
+            'PHONE NUMBER',
+            style: AppTypography.labelSmall.copyWith(
+              fontSize: 10,
+              letterSpacing: 0.8,
+            ),
+          ),
           const SizedBox(height: 6),
           isEditing
               ? TextField(
@@ -508,7 +615,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     filled: true,
                     fillColor: AppColors.background,
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: const BorderSide(color: AppColors.border),
@@ -520,7 +630,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 18),
 
           // Style Motto / Bio
-          Text('STYLE MOTTO / BIO', style: AppTypography.labelSmall.copyWith(fontSize: 10, letterSpacing: 0.8)),
+          Text(
+            'STYLE MOTTO / BIO',
+            style: AppTypography.labelSmall.copyWith(
+              fontSize: 10,
+              letterSpacing: 0.8,
+            ),
+          ),
           const SizedBox(height: 6),
           isEditing
               ? TextField(
@@ -566,9 +682,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.auto_awesome_outlined, color: AppColors.accentGold, size: 20),
+              const Icon(
+                Icons.auto_awesome_outlined,
+                color: AppColors.accentGold,
+                size: 20,
+              ),
               const SizedBox(width: 10),
-              Text('Jewelry & Style Profile', style: AppTypography.headingSmall.copyWith(fontSize: 16)),
+              Text(
+                'Jewelry & Style Profile',
+                style: AppTypography.headingSmall.copyWith(fontSize: 16),
+              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -576,35 +699,65 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 16),
 
           // Skin Undertone
-          Text('SKIN UNDERTONE', style: AppTypography.labelSmall.copyWith(fontSize: 10, letterSpacing: 0.8)),
+          Text(
+            'SKIN UNDERTONE',
+            style: AppTypography.labelSmall.copyWith(
+              fontSize: 10,
+              letterSpacing: 0.8,
+            ),
+          ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: undertones.map((u) => _choiceChip(
-              label: u,
-              selected: selectedUndertone == u,
-              onTap: isEditing ? () => setState(() => selectedUndertone = u) : null,
-            )).toList(),
+            children: undertones
+                .map(
+                  (u) => _choiceChip(
+                    label: u,
+                    selected: selectedUndertone == u,
+                    onTap: isEditing
+                        ? () => setState(() => selectedUndertone = u)
+                        : null,
+                  ),
+                )
+                .toList(),
           ),
           const SizedBox(height: 18),
 
           // Preferred Metal
-          Text('PREFERRED METAL / MATERIAL', style: AppTypography.labelSmall.copyWith(fontSize: 10, letterSpacing: 0.8)),
+          Text(
+            'PREFERRED METAL / MATERIAL',
+            style: AppTypography.labelSmall.copyWith(
+              fontSize: 10,
+              letterSpacing: 0.8,
+            ),
+          ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: metals.map((m) => _choiceChip(
-              label: m,
-              selected: selectedMetal == m,
-              onTap: isEditing ? () => setState(() => selectedMetal = m) : null,
-            )).toList(),
+            children: metals
+                .map(
+                  (m) => _choiceChip(
+                    label: m,
+                    selected: selectedMetal == m,
+                    onTap: isEditing
+                        ? () => setState(() => selectedMetal = m)
+                        : null,
+                  ),
+                )
+                .toList(),
           ),
           const SizedBox(height: 18),
 
           // Aesthetics
-          Text('FAVORITE AESTHETICS', style: AppTypography.labelSmall.copyWith(fontSize: 10, letterSpacing: 0.8)),
+          Text(
+            'FAVORITE AESTHETICS',
+            style: AppTypography.labelSmall.copyWith(
+              fontSize: 10,
+              letterSpacing: 0.8,
+            ),
+          ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -614,15 +767,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
               return _choiceChip(
                 label: a,
                 selected: isSel,
-                onTap: isEditing ? () {
-                  setState(() {
-                    if (isSel) {
-                      selectedAesthetics.remove(a);
-                    } else {
-                      selectedAesthetics.add(a);
-                    }
-                  });
-                } : null,
+                onTap: isEditing
+                    ? () {
+                        setState(() {
+                          if (isSel) {
+                            selectedAesthetics.remove(a);
+                          } else {
+                            selectedAesthetics.add(a);
+                          }
+                        });
+                      }
+                    : null,
               );
             }).toList(),
           ),
@@ -651,9 +806,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.straighten_outlined, color: AppColors.primaryEmerald, size: 20),
+              const Icon(
+                Icons.straighten_outlined,
+                color: AppColors.primaryEmerald,
+                size: 20,
+              ),
               const SizedBox(width: 10),
-              Text('Sizes & Vault Settings', style: AppTypography.headingSmall.copyWith(fontSize: 16)),
+              Text(
+                'Sizes & Vault Settings',
+                style: AppTypography.headingSmall.copyWith(fontSize: 16),
+              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -668,16 +830,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('DEFAULT RING SIZE', style: AppTypography.labelSmall.copyWith(fontSize: 10, letterSpacing: 0.8)),
+                    Text(
+                      'DEFAULT RING SIZE',
+                      style: AppTypography.labelSmall.copyWith(
+                        fontSize: 10,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 6,
                       runSpacing: 6,
-                      children: ringSizes.map((rs) => _choiceChip(
-                        label: rs,
-                        selected: selectedRingSize == rs,
-                        onTap: isEditing ? () => setState(() => selectedRingSize = rs) : null,
-                      )).toList(),
+                      children: ringSizes
+                          .map(
+                            (rs) => _choiceChip(
+                              label: rs,
+                              selected: selectedRingSize == rs,
+                              onTap: isEditing
+                                  ? () => setState(() => selectedRingSize = rs)
+                                  : null,
+                            ),
+                          )
+                          .toList(),
                     ),
                   ],
                 ),
@@ -689,16 +863,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('APPAREL SIZE', style: AppTypography.labelSmall.copyWith(fontSize: 10, letterSpacing: 0.8)),
+                    Text(
+                      'APPAREL SIZE',
+                      style: AppTypography.labelSmall.copyWith(
+                        fontSize: 10,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 6,
                       runSpacing: 6,
-                      children: apparelSizes.map((as) => _choiceChip(
-                        label: as,
-                        selected: selectedApparelSize == as,
-                        onTap: isEditing ? () => setState(() => selectedApparelSize = as) : null,
-                      )).toList(),
+                      children: apparelSizes
+                          .map(
+                            (as) => _choiceChip(
+                              label: as,
+                              selected: selectedApparelSize == as,
+                              onTap: isEditing
+                                  ? () =>
+                                        setState(() => selectedApparelSize = as)
+                                  : null,
+                            ),
+                          )
+                          .toList(),
                     ),
                   ],
                 ),
@@ -711,7 +898,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 18),
 
           // Currency & Notification Preferences
-          Text('VAULT PREFERENCES', style: AppTypography.labelSmall.copyWith(fontSize: 10, letterSpacing: 0.8)),
+          Text(
+            'VAULT PREFERENCES',
+            style: AppTypography.labelSmall.copyWith(
+              fontSize: 10,
+              letterSpacing: 0.8,
+            ),
+          ),
           const SizedBox(height: 12),
 
           Row(
@@ -723,29 +916,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 value: selectedCurrency,
                 underline: const SizedBox(),
                 dropdownColor: AppColors.surface,
-                style: AppTypography.labelLarge.copyWith(color: AppColors.primaryEmerald),
-                onChanged: isEditing ? (v) => setState(() => selectedCurrency = v!) : null,
-                items: currencies.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                style: AppTypography.labelLarge.copyWith(
+                  color: AppColors.primaryEmerald,
+                ),
+                onChanged: isEditing
+                    ? (v) => setState(() => selectedCurrency = v!)
+                    : null,
+                items: currencies
+                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                    .toList(),
               ),
             ],
           ),
 
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: Text('Outfit Recommendations', style: AppTypography.labelLarge),
-            subtitle: Text('Receive AI style suggestions and pairing tips', style: AppTypography.bodySmall.copyWith(color: AppColors.secondaryText)),
+            title: Text(
+              'Outfit Recommendations',
+              style: AppTypography.labelLarge,
+            ),
+            subtitle: Text(
+              'Receive AI style suggestions and pairing tips',
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.secondaryText,
+              ),
+            ),
             value: notifyRecommendations,
             activeColor: AppColors.primaryEmerald,
-            onChanged: isEditing ? (v) => setState(() => notifyRecommendations = v) : null,
+            onChanged: isEditing
+                ? (v) => setState(() => notifyRecommendations = v)
+                : null,
           ),
 
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: Text('Jewelry Pairing Alerts', style: AppTypography.labelLarge),
-            subtitle: Text('Get notified when new jewelry matches your closet', style: AppTypography.bodySmall.copyWith(color: AppColors.secondaryText)),
+            title: Text(
+              'Jewelry Pairing Alerts',
+              style: AppTypography.labelLarge,
+            ),
+            subtitle: Text(
+              'Get notified when new jewelry matches your closet',
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.secondaryText,
+              ),
+            ),
             value: notifyPairingAlerts,
             activeColor: AppColors.primaryEmerald,
-            onChanged: isEditing ? (v) => setState(() => notifyPairingAlerts = v) : null,
+            onChanged: isEditing
+                ? (v) => setState(() => notifyPairingAlerts = v)
+                : null,
           ),
         ],
       ),

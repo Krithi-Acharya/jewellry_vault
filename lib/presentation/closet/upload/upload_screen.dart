@@ -71,8 +71,10 @@ class _UploadScreenContent extends StatelessWidget {
                     style: AppTypography.bodyMedium,
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: AppSpacing.md,
+                    runSpacing: AppSpacing.md,
                     children: [
                       JVButton(
                         text: 'Browse Files',
@@ -80,7 +82,6 @@ class _UploadScreenContent extends StatelessWidget {
                         isFullWidth: false,
                         icon: Icons.folder_open,
                       ),
-                      const SizedBox(width: AppSpacing.md),
                       JVButton(
                         text: 'Take Photo',
                         variant: JVButtonVariant.secondary,

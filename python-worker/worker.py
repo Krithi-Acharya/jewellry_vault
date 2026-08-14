@@ -215,14 +215,18 @@ class Worker:
                     self.process_job(job)
                 else:
                     time.sleep(Config.POLL_INTERVAL_SECONDS)
-            except psycopg2.OperationalError as e:
-                logging.error(f"Database connection lost: {e}. Reconnecting in 5s...")
+            except (psycopg2.OperationalError, psycopg2.InterfaceError, psycopg2.Error) as e:
+                logging.error(f"Database connection error: {e}. Reconnecting in 5s...")
+                time.sleep(5)
+                try:
+                    self.db = Database()
+                except Exception as reconnect_err:
+                    logging.error(f"Reconnection attempt failed: {reconnect_err}")
+            except Exception as e:
+                logging.error(f"Unexpected error in worker loop: {e}. Retrying in 5s...")
                 time.sleep(5)
                 try:
                     self.db = Database()
                 except Exception:
                     pass
-            except Exception as e:
-                logging.error(f"Unexpected error in worker loop: {e}. Retrying in 5s...")
-                time.sleep(5)
 

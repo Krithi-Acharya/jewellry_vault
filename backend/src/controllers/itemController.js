@@ -366,12 +366,22 @@ export const updateItem = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Item not found' });
     }
 
-    const { categoryId, status, manualAttributes, manualColors, isFavorite } = req.body;
+    const { categoryId, categoryName, status, manualAttributes, manualColors, isFavorite } = req.body;
+
+    let targetCategoryId = categoryId;
+    if (!targetCategoryId && categoryName) {
+      const matchedCategory = await prisma.item_categories.findFirst({
+        where: { itc_name: { equals: categoryName, mode: 'insensitive' } }
+      });
+      if (matchedCategory) {
+        targetCategoryId = matchedCategory.itc_id;
+      }
+    }
 
     const item = await prisma.closet_items.update({
       where: { ci_id: itemId },
       data: {
-        ...(categoryId && { ci_category_id: categoryId }),
+        ...(targetCategoryId && { ci_category_id: targetCategoryId }),
         ...(status && { ci_status: status }),
         ...(isFavorite !== undefined && { ci_is_favorite: isFavorite }),
       },

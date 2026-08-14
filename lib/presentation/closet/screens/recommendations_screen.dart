@@ -27,7 +27,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
     try {
       final token = await AuthService.instance.getIdToken();
       final url = '${AppConfig.apiBaseUrl}/recommendations/${widget.itemId}';
-      
+
       final response = await _dio.get(
         url,
         options: Options(headers: {'Authorization': 'Bearer $token'}),
@@ -47,12 +47,16 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
     final itemData = rec['itemData'];
     final score = rec['score'];
     final reason = rec['reason'];
-    
+
     String emoji;
-    if (index == 0) emoji = '🥇';
-    else if (index == 1) emoji = '🥈';
-    else if (index == 2) emoji = '🥉';
-    else emoji = '🔹';
+    if (index == 0)
+      emoji = '🥇';
+    else if (index == 1)
+      emoji = '🥈';
+    else if (index == 2)
+      emoji = '🥉';
+    else
+      emoji = '🔹';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,10 +64,18 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              '$emoji ${itemData['categoryName'] ?? 'Item'}',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Expanded(
+              child: Text(
+                '$emoji ${itemData['categoryName'] ?? 'Item'}',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
             ),
+            const SizedBox(width: 8),
             Text(
               '$score%',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -71,7 +83,14 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
           ],
         ),
         const SizedBox(height: 8),
-        const Text('Reason', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey)),
+        const Text(
+          'Reason',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
         const SizedBox(height: 4),
         Text(reason ?? '', style: const TextStyle(fontSize: 16)),
         const SizedBox(height: 16),
@@ -86,32 +105,55 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFFCF9F4),
       appBar: AppBar(
-        title: const Text('Recommendations', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Recommendations',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF1B4332)))
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF1B4332)),
+            )
           : _data == null || _data!['recommendations'] == null
-              ? const Center(child: Text('Failed to load recommendations'))
-              : ListView(
-                  padding: const EdgeInsets.all(32.0),
-                  children: [
-                    const Center(
-                      child: Text('Your Item', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey)),
+          ? const Center(child: Text('Failed to load recommendations'))
+          : ListView(
+              padding: const EdgeInsets.all(32.0),
+              children: [
+                const Center(
+                  child: Text(
+                    'Your Item',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey,
                     ),
-                    const SizedBox(height: 16),
-                    const Center(child: Icon(Icons.arrow_downward, color: Colors.grey)),
-                    const SizedBox(height: 16),
-                    const Center(
-                      child: Text('Best Matches', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1B4332))),
-                    ),
-                    const SizedBox(height: 32),
-                    ...(_data!['recommendations'] as List).asMap().entries.map((entry) {
-                      return _buildTopMatchCard(entry.value, entry.key);
-                    }),
-                  ],
+                  ),
                 ),
+                const SizedBox(height: 16),
+                const Center(
+                  child: Icon(Icons.arrow_downward, color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+                const Center(
+                  child: Text(
+                    'Best Matches',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1B4332),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                ...(_data!['recommendations'] as List).asMap().entries.map((
+                  entry,
+                ) {
+                  return _buildTopMatchCard(entry.value, entry.key);
+                }),
+              ],
+            ),
     );
   }
 }

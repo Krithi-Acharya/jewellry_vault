@@ -180,6 +180,7 @@ class _MetadataReviewScreenState extends State<MetadataReviewScreen> {
         url,
         options: Options(headers: {'Authorization': 'Bearer $token'}),
         data: {
+          if (_selectedCategory != null) 'categoryName': _selectedCategory,
           'manualAttributes': manualAttributes,
           'manualColors': manualColors,
           'status': 'ACTIVE',
